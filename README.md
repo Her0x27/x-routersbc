@@ -35,9 +35,9 @@ github.com/Her0x27/x-routersbc/
 
 ## Network Management Features
 
-- Interface management (Physical, VPN, Bridges)
+- Interface management (Physical, VPN, VLAN, ...)
 - WAN configuration (Single/Multi WAN, Load balancing)
-- LAN settings (DHCP, DNS, Bridge)
+- LAN settings (DHCP, DNS, VLAN Bridge)
 - Wireless management (AP, STA, ADHOC, Monitor)
 - Static routing and UPnP
 - Firewall (NFTables/IPTables support)
@@ -117,7 +117,7 @@ handlers/
 - User authentication
 
 ### Network Handlers
-- Interface management (Physical, VPN, Bridges)
+- Interface management (Physical, VPN, VLAN, ...)
 - WAN configuration (Wire/Wireless, Multi-WAN)
 - LAN settings (DHCP, DNS, Bridge)
 - Wireless management (AP, STA, ADHOC, Monitor)
