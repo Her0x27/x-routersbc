@@ -1,517 +1,429 @@
 # X-RouterSBC
-> Advanced Software-Based Controller (SBC) for network routing and management.
+> Advanced Software-Based Controller (SBC) router solution built with Go 1.23 and Echo Framework.
 
 ## Project Structure
 
 ```
 github.com/Her0x27/x-routersbc/
-├── core/                 # Web server core (HTTP/2, WebSocket, Auth)
-├── handlers/             # HTTP request handlers
-├── services/             # Business logic services
-├── routes/               # URL routing definitions
-├── templates/            # HTML templates (Tabler.io based)
-├── static/               # Static assets (CSS, JS, images)
-├── utils/                # Utility tools and helpers
-└── scripts/              # Build and deployment scripts
+├── core/           # Web server core (HTTP/2, WebSocket, Auth, Auto-loading)
+├── handlers/       # Request handlers
+├── services/       # Business logic services
+├── routes/         # URL routing definitions
+├── templates/      # HTML templates (Tabler.io based)
+├── static/         # Static assets (CSS, JS, images)
+├── utils/          # Utility tools and helpers
+└── scripts/        # Build and deployment scripts
 ```
 
 ## Features
 
-- **Web Server Core**: HTTP/2, WebSocket support, authentication
-- **Auto-initialization**: Automatic loading of handlers, routes, and modules
-- **REST API v1**: RESTful API endpoints
-- **Database**: SQLite database (routersbc.sqlitedb)
-- **Admin Access**: Default credentials (sbc:sbc)
-- **Network Management**: Complete network configuration interface
-- **Real-time Updates**: WebSocket-based interface updates
+- **Web Server**: HTTP/2 support on port 5000
+- **Authentication**: Built-in auth system (admin:sbc/sbc)
+- **Database**: SQLite (routersbc.sqlitedb)
+- **Real-time Updates**: WebSocket support
+- **REST API**: v1 API endpoints
+- **Auto-loading**: Automatic handlers/routes/modules initialization
+
+## Network Management
+
+- Interface Management (Physical, VLAN, VPN)
+- WAN Configuration (Single/Multi-WAN, Load Balancing)
+- LAN Services (DHCP, DNS, Bridge)
+- Wireless Management (AP, STA, ADHOC, MONITOR)
+- Advanced Routing (Static Routes, UPnP IGD & PCP)
+- Firewall (NFTables/IPTables support)
+
+## Requirements
+
+- Go 1.23+
+- Linux-based OS (Armbian, Debian, Ubuntu)
+- Network management privileges
 
 ## Quick Start
 
-1. Clone the repository
-2. Build the application
-3. Run with default configuration
-4. Access web interface at http://localhost:8080
-5. Login with admin credentials (sbc:sbc)
+```bash
+go mod tidy
+go run main.go
+```
 
-## Network Management Features
+Access the web interface at: http://localhost:5000
 
-- Interface management (Physical, VPN, VLAN, ...)
-- WAN configuration (Single/Multi WAN, Load balancing)
-- LAN settings (DHCP, DNS, VLAN Bridge)
-- Wireless management (AP, STA, ADHOC, Monitor)
-- Static routing and UPnP
-- Firewall (NFTables/IPTables support)
+## Default Credentials
 
-## Supported Operating Systems
-
-- Armbian
-- Debian
-- Ubuntu
+- Username: `sbc`
+- Password: `sbc`
 
 # Core Module
 > Web server core module providing HTTP/2, WebSocket, authentication, and auto-initialization functionality.
 
-## Structure
-
-```
-core/
-├── server.go           # Main HTTP/2 server implementation
-├── websocket.go        # WebSocket handler and management
-├── auth.go             # Authentication middleware
-├── init.go             # Auto-initialization of handlers/routes/modules
-├── database.go         # SQLite database connection and management
-└── middleware.go       # Common middleware functions
-```
-
 ## Features
 
-- **HTTP/2 Server**: High-performance web server
-- **WebSocket Support**: Real-time communication
-- **Authentication**: Session-based authentication system
+- **HTTP/2 Server**: High-performance web server on port 5000
+- **WebSocket Support**: Real-time communication for UI updates
+- **Authentication System**: Built-in auth with SQLite backend
 - **Auto-loading**: Automatic discovery and loading of:
-  - HTTP handlers
-  - URL routes
-  - Service modules
+  - Handlers
+  - Routes
+  - Modules
+- **REST API v1**: RESTful API endpoints
 - **Database**: SQLite integration (routersbc.sqlitedb)
-- **Admin Interface**: Default admin user (sbc:sbc)
 
-## Database Schema
+## Components
 
-- Users table (authentication)
-- Configuration tables (network settings)
-- Logs table (system events)
-- Sessions table (active sessions)
+- `server.go` - Main HTTP/2 server implementation
+- `auth.go` - Authentication middleware and handlers
+- `websocket.go` - WebSocket connection management
+- `database.go` - SQLite database operations
+- `loader.go` - Auto-loading system for handlers/routes
+- `middleware.go` - Common middleware functions
 
-## API Endpoints
+## Configuration
 
-- `/api/v1/auth` - Authentication endpoints
-- `/api/v1/network` - Network management
-- `/api/v1/system` - System information
-- `/ws` - WebSocket endpoint for real-time updates
-
-# Handlers Module
-> HTTP request handlers for all web interface endpoints and API routes.
-
-## Structure
-
-```
-handlers/
-├── auth_handler.go         # Authentication handlers
-├── network_handler.go      # Network management handlers
-├── interface_handler.go    # Network interface handlers
-├── wan_handler.go          # WAN configuration handlers
-├── lan_handler.go          # LAN configuration handlers
-├── wireless_handler.go     # Wireless management handlers
-├── routing_handler.go      # Routing configuration handlers
-├── firewall_handler.go     # Firewall management handlers
-├── dns_handler.go          # DNS configuration handlers
-├── dhcp_handler.go         # DHCP server handlers
-└── websocket_handler.go    # WebSocket message handlers
-```
-
-## Handler Functions
-
-### Authentication Handlers
-- Login/logout functionality
-- Session management
-- User authentication
-
-### Network Handlers
-- Interface management (Physical, VPN, VLAN, ...)
-- WAN configuration (Wire/Wireless, Multi-WAN)
-- LAN settings (DHCP, DNS, Bridge)
-- Wireless management (AP, STA, ADHOC, Monitor)
-- Static routing and UPnP IGD
-- Firewall rules (NFTables/IPTables)
-
-### WebSocket Handlers
-- Real-time interface updates
-- System status notifications
-- Configuration change broadcasts
-
-## API Response Format
-
-All handlers return JSON responses with consistent structure:
-```json
-{
-  "success": true,
-  "data": {},
-  "message": "Operation completed successfully"
+```go
+type ServerConfig struct {
+    Port     int    `json:"port"`
+    Host     string `json:"host"`
+    Database string `json:"database"`
+    Debug    bool   `json:"debug"`
 }
 ```
 
-# Services Module
-> Business logic services that interact with system configurators and provide data processing.
+## Default Settings
+
+- Port: 5000
+- Protocol: HTTP (no HTTPS support)
+- Database: routersbc.sqlitedb
+- Default Admin: sbc:sbc
+
+# Handlers Module
+> Request handlers for processing HTTP requests and WebSocket connections.
 
 ## Structure
 
-```
-services/
-├── auth_service.go         # Authentication business logic
-├── network_service.go      # Network management service
-├── interface_service.go    # Network interface service
-├── wan_service.go          # WAN configuration service
-├── lan_service.go          # LAN configuration service
-├── wireless_service.go     # Wireless management service
-├── routing_service.go      # Routing configuration service
-├── firewall_service.go     # Firewall management service
-├── dns_service.go          # DNS configuration service
-├── dhcp_service.go         # DHCP server service
-└── system_service.go       # System information service
-```
+- `network.go` - Network management handlers
+- `interfaces.go` - Network interface operations
+- `wan.go` - WAN configuration handlers
+- `lan.go` - LAN services handlers
+- `wireless.go` - Wireless management handlers
+- `routing.go` - Routing configuration handlers
+- `firewall.go` - Firewall management handlers
+- `auth.go` - Authentication handlers
+- `websocket.go` - WebSocket message handlers
+- `api.go` - REST API v1 handlers
 
-## Service Functions
+## Handler Types
 
-### Network Services
-- Interface detection and management
-- Configuration validation
-- System integration with `/utils/configurators/net/*`
+### Page Handlers
+- Render HTML templates
+- Handle form submissions
+- Manage user sessions
 
-### Authentication Service
-- User management
-- Session handling
-- Permission validation
+### API Handlers
+- REST API endpoints
+- JSON request/response
+- CRUD operations
 
-### System Service
-- OS detection (Armbian, Debian, Ubuntu)
-- Service management (start/stop/restart/reload)
-- Kernel parameter management
+### WebSocket Handlers
+- Real-time updates
+- Configuration changes
+- Status monitoring
 
-## Integration
+## Modal Operations
 
-Services integrate with:
-- `/utils/configurators/` for system configuration
-- Database for persistent storage
-- WebSocket for real-time updates
-- External system tools and APIs
+Handlers support modal operations for:
+- UPnP STUN Server management
+- Static Route configuration
+- Firewall Rule management
+- Network Interface creation
+- DNS Zone management
+- WiFi connection setup
 
-## Configuration Management
+# Services Module
+> Business logic services for network management and system operations.
 
-Services handle:
-- Network interface configuration
-- Firewall rules (NFTables/IPTables)
-- DNS and DHCP settings
-- Wireless network management
-- Static routing configuration
+## Network Services
+
+- `interface_service.go` - Network interface management
+- `wan_service.go` - WAN configuration service
+- `lan_service.go` - LAN services management
+- `wireless_service.go` - Wireless operations
+- `routing_service.go` - Routing table management
+- `firewall_service.go` - Firewall rule management
+- `dns_service.go` - DNS configuration service
+- `dhcp_service.go` - DHCP server management
+
+## System Services
+
+- `config_service.go` - Configuration management
+- `monitor_service.go` - System monitoring
+- `update_service.go` - Real-time updates via WebSocket
+
+## Service Features
+
+### Configuration Management
+- Load/Save network configurations
+- Validate configuration changes
+- Apply configurations to system
+
+### Real-time Monitoring
+- Interface status monitoring
+- Traffic statistics
+- System resource usage
+
+### Integration
+- Works with utils/configurators
+- Supports multiple OS distributions
+- WebSocket notifications for changes
 
 # Routes Module
-> URL routing definitions for web interface and API endpoints.
+> URL routing definitions for the web application.
 
-## Structure
+## Route Files
 
-```
-routes/
-├── auth_routes.go          # Authentication routes
-├── network_routes.go       # Network management routes
-├── interface_routes.go     # Network interface routes
-├── wan_routes.go           # WAN configuration routes
-├── lan_routes.go           # LAN configuration routes
-├── wireless_routes.go      # Wireless management routes
-├── routing_routes.go       # Routing configuration routes
-├── firewall_routes.go      # Firewall management routes
-├── api_routes.go           # REST API v1 routes
-└── static_routes.go        # Static file serving routes
-```
+- `network.go` - Network management routes
+- `api.go` - REST API v1 routes
+- `auth.go` - Authentication routes
+- `static.go` - Static file serving
+- `websocket.go` - WebSocket endpoints
 
-## Route Definitions
+## Route Groups
 
 ### Web Interface Routes
-- `/` - Dashboard
-- `/network` - Network management interface
-- `/network/interfaces` - Interface management
-- `/network/wan` - WAN configuration
-- `/network/lan` - LAN configuration
-- `/network/wireless` - Wireless management
-- `/network/routing` - Routing configuration
-- `/network/firewall` - Firewall management
+```
+/                    - Dashboard
+/network             - Network overview
+/network/interfaces  - Interface management
+/network/wan         - WAN configuration
+/network/lan         - LAN services
+/network/wireless    - Wireless management
+/network/routing     - Routing configuration
+/network/firewall    - Firewall management
+```
 
-### API Routes (v1)
-- `/api/v1/auth/*` - Authentication endpoints
-- `/api/v1/network/*` - Network management API
-- `/api/v1/interfaces/*` - Interface management API
-- `/api/v1/wan/*` - WAN configuration API
-- `/api/v1/lan/*` - LAN configuration API
-- `/api/v1/wireless/*` - Wireless management API
-- `/api/v1/routing/*` - Routing configuration API
-- `/api/v1/firewall/*` - Firewall management API
+### API Routes
+```
+/api/v1/interfaces   - Interface CRUD
+/api/v1/wan          - WAN configuration API
+/api/v1/lan          - LAN services API
+/api/v1/wireless     - Wireless API
+/api/v1/routing      - Routing API
+/api/v1/firewall     - Firewall API
+```
 
 ### WebSocket Routes
-- `/ws` - WebSocket endpoint for real-time updates
+```
+/ws                  - Main WebSocket endpoint
+/ws/network          - Network updates
+/ws/status           - System status updates
+```
 
-### Static Routes
-- `/static/*` - Static assets (CSS, JS, images)
+## Error Pages
+
+- `/404` - Not Found (templates/404.html)
+- `/501` - Not Implemented (templates/501.html)
 
 # Templates Module
-> HTML templates based on Tabler.io framework for web interface.
+> HTML templates based on Tabler.io framework for consistent UI design.
 
 ## Structure
 
 ```
 templates/
-├── base/
-│   ├── layout.html         # Base layout template
-│   ├── header.html         # Common header
-│   ├── sidebar.html        # Navigation sidebar
-│   └── footer.html         # Common footer
-├── auth/
-│   ├── login.html          # Login page
-│   └── logout.html         # Logout confirmation
-├── network/
-│   ├── index.html          # Network dashboard
-│   ├── interfaces.html     # Interface management
-│   ├── wan.html            # WAN configuration
-│   ├── lan.html            # LAN configuration
-│   ├── wireless.html       # Wireless management
-│   ├── routing.html        # Routing configuration
-│   ├── firewall.html       # Firewall management
-│   ├── firewall_new.html   # NFTables firewall
-│   ├── firewall_classic.html # IPTables firewall
-│   └── modal.html          # Modal dialogs
-└── dashboard/
-    └── index.html          # Main dashboard
+├── base.html           # Base template with Tabler.io
+├── 404.html           # Not Found error page
+├── 501.html           # Not Implemented error page
+├── dashboard.html     # Main dashboard
+├── login.html         # Authentication page
+└── network/           # Network management templates
+    ├── index.html     # Network overview
+    ├── interfaces.html # Interface management
+    ├── wan.html       # WAN configuration
+    ├── lan.html       # LAN services
+    ├── wireless.html  # Wireless management
+    ├── routing.html   # Routing configuration
+    ├── firewall.html  # Firewall management
+    ├── firewall_new.html    # NFTables firewall
+    ├── firewall_classic.html # IPTables firewall
+    └── modal.html     # Modal dialogs
 ```
 
 ## Template Features
 
-### Base Templates
-- **Tabler.io Framework**: Modern, responsive design
-- **No Static Data**: All data loaded dynamically
-- **WebSocket Integration**: Real-time updates
-- **Modal Support**: Dynamic modal dialogs
+### Base Template (Tabler.io)
+- Responsive design
+- Modern UI components
+- Consistent styling
+- No static data
 
 ### Network Templates
-- **Tabbed Interface**: Organized configuration sections
-- **Dynamic Forms**: Configuration forms with validation
-- **Real-time Status**: Live interface status updates
+- Tab-based navigation
+- Dynamic content loading
+- Form validation
+- Real-time updates via WebSocket
 
 ### Modal Dialogs
-- Add/Edit UPnP STUN Server
-- Add/Edit Static Route
-- Add/Edit Firewall Rule/Chain
-- Add/Edit Network Interface
-- Add/Edit DNS Local Zones/Resolvers/Routing
-- Add/Edit WiFi Station/Access Point connections
+- UPnP STUN Server configuration
+- Static Route management
+- Firewall Rule editor
+- Network Interface creator
+- DNS Zone editor
+- WiFi connection setup
 
-## Template Data Structure
+## Template Variables
 
-Templates expect data in JSON format:
-- Interface lists and configurations
-- Network settings and status
-- Firewall rules and chains
-- DNS and DHCP configurations
+Templates receive dynamic data from handlers:
+- Network interface status
+- Configuration settings
+- System statistics
+- Error messages
+- Form validation results
 
 # Static Assets
-> Static files for web interface including CSS, JavaScript, and images.
+> Static files for the web interface including CSS, JavaScript, and images.
 
 ## Structure
 
 ```
 static/
 ├── css/
-│   ├── tabler.min.css      # Tabler.io framework CSS
-│   ├── custom.css          # Custom styles
-│   └── network.css         # Network-specific styles
+│   ├── custom.css     # Custom styles
+│   └── tabler.min.css # Tabler.io framework
 ├── js/
-│   ├── tabler.min.js       # Tabler.io framework JS
-│   ├── websocket.js        # WebSocket client
-│   ├── network.js          # Network management JS
-│   ├── modal.js            # Modal dialog handling
-│   └── utils.js            # Utility functions
-├── images/
-│   ├── logo.png            # Application logo
-│   ├── icons/              # Interface icons
-│   └── network/            # Network-related images
-└── fonts/
-    └── tabler-icons/       # Tabler icon fonts
+│   ├── app.js         # Main application JavaScript
+│   ├── websocket.js   # WebSocket client
+│   ├── network.js     # Network management functions
+│   └── tabler.min.js  # Tabler.io JavaScript
+├── img/
+│   ├── logo.png       # Application logo
+│   └── icons/         # UI icons
+└── fonts/             # Web fonts
 ```
 
 ## JavaScript Modules
 
-### WebSocket Client (`websocket.js`)
-- Real-time interface updates
-- System status notifications
-- Configuration change handling
+### WebSocket Client
+- Real-time updates
+- Connection management
+- Event handling
 
-### Network Management (`network.js`)
-- Interface management functions
-- Configuration form handling
-- Status monitoring
-
-### Modal Handling (`modal.js`)
-- Dynamic modal creation
+### Network Management
 - Form validation
-- AJAX form submission
+- AJAX requests
+- Modal dialogs
+- Tab navigation
 
-### Utilities (`utils.js`)
-- Common helper functions
-- Data formatting
-- Error handling
+### UI Components
+- Dynamic tables
+- Progress indicators
+- Notifications
+- Form helpers
 
 ## CSS Customization
 
-### Custom Styles (`custom.css`)
-- Application-specific styling
-- Theme customizations
-- Responsive design adjustments
-
-### Network Styles (`network.css`)
-- Network interface styling
-- Status indicators
-- Configuration form styling
+- Custom color scheme
+- Network-specific styling
+- Responsive adjustments
+- Dark/light theme support
 
 # Utils Module
-> Utility tools and system configurators for different operating systems.
+> Utility tools and system configurators for network management.
 
 ## Structure
 
 ```
 utils/
-├── configurators/
-│   ├── net/
-│   │   ├── netplan.go      # Netplan configuration (Ubuntu)
-│   │   ├── interfaces.go   # Network interfaces configuration
-│   │   ├── wan.go          # WAN configuration
-│   │   ├── dns.go          # DNS configuration
-│   │   ├── dhcp.go         # DHCP server configuration
-│   │   ├── routing.go      # Static routing configuration
-│   │   └── firewall.go     # Firewall configuration
-│   └── sys/
-│       ├── kernel.go       # Kernel parameter management
-│       └── services.go     # System service management
-├── helpers/
-│   ├── validation.go       # Input validation helpers
-│   ├── network.go          # Network utility functions
-│   └── system.go           # System information helpers
-└── constants/
-    ├── network.go          # Network-related constants
-    └── system.go           # System constants
+├── configurators/     # OS-specific configurators
+│   ├── net/          # Network configuration
+│   └── sys/          # System configuration
+├── helpers/          # Helper functions
+├── validators/       # Input validation
+└── converters/       # Data conversion utilities
 ```
 
-## Configurators
+## Network Configurators
 
-### Network Configurators (`net/`)
-- **netplan.go**: Ubuntu/Netplan configuration management
-- **interfaces.go**: Debian/interfaces configuration
-- **wan.go**: WAN interface configuration
-- **dns.go**: DNS resolver configuration (DoT, DoH support)
-- **dhcp.go**: DHCP server configuration
-- **routing.go**: Static routes and UPnP configuration
-- **firewall.go**: NFTables/IPTables management
+### Supported OS
+- Armbian
+- Debian  
+- Ubuntu
 
-### System Configurators (`sys/`)
-- **kernel.go**: Kernel parameter tuning
-- **services.go**: Systemd service management (start/stop/restart/reload/enable/disable)
+### Network Modules
+- `netplan.go` - Netplan configuration
+- `interfaces.go` - Network interfaces
+- `wan.go` - WAN configuration
+- `dns.go` - DNS settings
+- `dhcp.go` - DHCP server
+- `routing.go` - Routing tables
+- `firewall.go` - Firewall rules
 
-## Supported Operating Systems
+### System Modules
+- `kernel.go` - Kernel parameters
+- `services.go` - System service management
 
-- **Armbian**: ARM-based Linux distribution
-- **Debian**: Debian-based systems
-- **Ubuntu**: Ubuntu and derivatives
+## Service Operations
 
-## Configuration Features
+```go
+// Service management
+Start(service string) error
+Stop(service string) error
+Restart(service string) error
+Reload(service string) error
+Enable(service string) error
+Disable(service string) error
+```
 
-### Network Configuration
-- Interface detection and management
-- VLAN and bridge configuration
-- Wireless network management
-- Firewall rule management
-- DNS and DHCP configuration
+## Configuration Management
 
-### System Management
-- Service control and monitoring
-- Kernel parameter optimization
-- System information gathering
+- Backup existing configurations
+- Validate new configurations
+- Apply changes atomically
+- Rollback on failure
 
 # Scripts Module
-
-Build, deployment, and maintenance scripts for the x-routersbc project.
-
-## Structure
-
-```
-scripts/
-├── build/
-│   ├── build.sh            # Main build script
-│   ├── cross-compile.sh    # Cross-compilation for ARM
-│   └── package.sh          # Package creation script
-├── deploy/
-│   ├── install.sh          # Installation script
-│   ├── update.sh           # Update script
-│   └── uninstall.sh        # Uninstallation script
-├── dev/
-│   ├── setup-dev.sh        # Development environment setup
-│   ├── test.sh             # Run tests
-│   └── lint.sh             # Code linting
-└── maintenance/
-    ├── backup.sh           # Configuration backup
-    ├── restore.sh          # Configuration restore
-    └── cleanup.sh          # System cleanup
-```
+> Build, deployment, and maintenance scripts for the x-routersbc project.
 
 ## Build Scripts
 
-### Main Build (`build/build.sh`)
-- Compile Go application
-- Generate static assets
-- Create distribution package
-
-### Cross-compilation (`build/cross-compile.sh`)
-- Build for ARM architectures
-- Support for different ARM variants
-- Optimization for embedded systems
-
-### Packaging (`build/package.sh`)
-- Create DEB/RPM packages
-- Generate installation archives
-- Include dependencies and configurations
+- `build.sh` - Build application for multiple architectures
+- `build-arm.sh` - ARM-specific build (for SBC devices)
+- `build-docker.sh` - Docker container build
 
 ## Deployment Scripts
 
-### Installation (`deploy/install.sh`)
-- System requirements check
-- Service installation and configuration
-- Database initialization
-- Default configuration setup
-
-### Updates (`deploy/update.sh`)
-- Application updates
-- Configuration migration
-- Service restart management
-
-### Uninstallation (`deploy/uninstall.sh`)
-- Clean removal of application
-- Configuration backup option
-- Service cleanup
+- `deploy.sh` - Deploy to target system
+- `install.sh` - System installation script
+- `update.sh` - Application update script
 
 ## Development Scripts
 
-### Development Setup (`dev/setup-dev.sh`)
-- Development environment preparation
-- Dependency installation
-- Test database setup
-
-### Testing (`dev/test.sh`)
-- Unit test execution
-- Integration test running
-- Coverage reporting
-
-### Code Quality (`dev/lint.sh`)
-- Go code linting
-- Static analysis
-- Code formatting validation
+- `dev.sh` - Development server with hot reload
+- `test.sh` - Run test suite
+- `lint.sh` - Code linting and formatting
 
 ## Maintenance Scripts
 
-### Backup (`maintenance/backup.sh`)
-- Configuration backup
-- Database backup
-- System state preservation
+- `backup.sh` - Backup configuration and database
+- `restore.sh` - Restore from backup
+- `cleanup.sh` - Clean temporary files and logs
 
-### Restore (`maintenance/restore.sh`)
-- Configuration restoration
-- Database recovery
-- Service reconfiguration
+## System Scripts
 
-### Cleanup (`maintenance/cleanup.sh`)
-- Log file cleanup
-- Temporary file removal
+- `setup-deps.sh` - Install system dependencies
+- `setup-network.sh` - Configure network prerequisites
+- `setup-firewall.sh` - Setup firewall prerequisites
+
+## Usage Examples
+
+```bash
+# Build for ARM devices
+./scripts/build-arm.sh
+
+# Deploy to remote SBC
+./scripts/deploy.sh user@192.168.1.1
+
+# Start development server
+./scripts/dev.sh
+
+# Run tests
+./scripts/test.sh
+```
