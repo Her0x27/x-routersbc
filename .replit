@@ -1,4 +1,4 @@
-modules = ["go"]
+modules = ["go", "go-1.23"]
 
 [nix]
 channel = "stable-24_05"
@@ -21,8 +21,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "go mod init github.com/Her0x27/x-routersbc && go mod tidy && go run main.go"
-waitForPort = 5000
+args = "go run main.go"
 
 [deployment]
 run = ["sh", "-c", "go mod init github.com/Her0x27/x-routersbc && go mod tidy && go run main.go"]
