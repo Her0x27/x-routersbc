@@ -2,130 +2,99 @@ package core
 
 import (
 	"database/sql"
-	"time"
+	"fmt"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Database represents the database connection
-type Database struct {
-	conn *sql.DB
-}
+var db *sql.DB
 
-// NewDatabase creates a new database connection
-func NewDatabase() (*Database, error) {
-	conn, err := sql.Open("sqlite3", "routersbc.sqlitedb")
+// InitDatabase initializes the SQLite database
+func InitDatabase() error {
+	var err error
+	db, err = sql.Open("sqlite3", "routersbc.sqlitedb")
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("failed to open database: %v", err)
 	}
-	
-	db := &Database{conn: conn}
-	
-	// Initialize tables
-	if err := db.initTables(); err != nil {
-		return nil, err
+
+	// Test connection
+	if err = db.Ping(); err != nil {
+		return fmt.Errorf("failed to ping database: %v", err)
 	}
-	
-	return db, nil
+
+	// Create tables
+	if err = createTables(); err != nil {
+		return fmt.Errorf("failed to create tables: %v", err)
+	}
+
+	// Create default admin user
+	authService := NewAuthService()
+	if err = authService.CreateDefaultUser(); err != nil {
+		return fmt.Errorf("failed to create default user: %v", err)
+	}
+
+	return nil
 }
 
-// initTables creates the necessary tables
-func (db *Database) initTables() error {
-	queries := []string{
+// createTables creates the necessary database tables
+func createTables() error {
+	tables := []string{
 		`CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			username TEXT UNIQUE NOT NULL,
 			password_hash TEXT NOT NULL,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			last_login DATETIME,
-			first_login BOOLEAN DEFAULT TRUE
-		);`,
+			first_login BOOLEAN DEFAULT 1,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
 		`CREATE TABLE IF NOT EXISTS sessions (
 			id TEXT PRIMARY KEY,
-			user_id INTEGER,
+			user_id INTEGER NOT NULL,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			expires_at DATETIME NOT NULL,
-			FOREIGN KEY(user_id) REFERENCES users(id)
-		);`,
+			FOREIGN KEY (user_id) REFERENCES users (id)
+		)`,
 		`CREATE TABLE IF NOT EXISTS network_interfaces (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT UNIQUE NOT NULL,
 			type TEXT NOT NULL,
-			enabled BOOLEAN DEFAULT TRUE,
-			ip_address TEXT,
-			netmask TEXT,
-			gateway TEXT,
+			enabled BOOLEAN DEFAULT 1,
+			config TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		);`,
+		)`,
+		`CREATE TABLE IF NOT EXISTS network_routes (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			interface TEXT NOT NULL,
+			destination TEXT NOT NULL,
+			gateway TEXT NOT NULL,
+			metric INTEGER DEFAULT 0,
+			enabled BOOLEAN DEFAULT 1,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
 		`CREATE TABLE IF NOT EXISTS firewall_rules (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			name TEXT NOT NULL,
 			chain TEXT NOT NULL,
-			action TEXT NOT NULL,
-			protocol TEXT,
-			source TEXT,
-			destination TEXT,
-			port TEXT,
-			enabled BOOLEAN DEFAULT TRUE,
+			rule_text TEXT NOT NULL,
+			position INTEGER DEFAULT 0,
+			enabled BOOLEAN DEFAULT 1,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		);`,
+		)`,
+		`CREATE TABLE IF NOT EXISTS system_config (
+			key TEXT PRIMARY KEY,
+			value TEXT NOT NULL,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
 	}
-	
-	for _, query := range queries {
-		if _, err := db.conn.Exec(query); err != nil {
-			return err
+
+	for _, table := range tables {
+		if _, err := db.Exec(table); err != nil {
+			return fmt.Errorf("failed to create table: %v", err)
 		}
 	}
-	
-	// Create default admin user if not exists
-	return db.createDefaultAdmin()
-}
 
-// createDefaultAdmin creates the default admin user
-func (db *Database) createDefaultAdmin() error {
-	var count int
-	err := db.conn.QueryRow("SELECT COUNT(*) FROM users WHERE username = ?", "sbc").Scan(&count)
-	if err != nil {
-		return err
-	}
-	
-	if count == 0 {
-		// Hash the default password "sbc"
-		hashedPassword := HashPassword("sbc")
-		_, err = db.conn.Exec(
-			"INSERT INTO users (username, password_hash) VALUES (?, ?)",
-			"sbc", hashedPassword,
-		)
-		return err
-	}
-	
 	return nil
 }
 
-// GetConnection returns the database connection
-func (db *Database) GetConnection() *sql.DB {
-	return db.conn
-}
-
-// Close closes the database connection
-func (db *Database) Close() error {
-	return db.conn.Close()
-}
-
-// Session represents a user session
-type Session struct {
-	ID        string
-	UserID    int
-	CreatedAt time.Time
-	ExpiresAt time.Time
-}
-
-// User represents a user account
-type User struct {
-	ID           int
-	Username     string
-	PasswordHash string
-	CreatedAt    time.Time
-	LastLogin    *time.Time
-	FirstLogin   bool
+// GetDB returns the database connection
+func GetDB() *sql.DB {
+	return db
 }

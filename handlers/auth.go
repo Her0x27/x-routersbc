@@ -2,143 +2,136 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/Her0x27/x-routersbc/core"
 	"github.com/labstack/echo/v4"
 )
 
-// AuthHandler handles authentication requests
+// AuthHandler handles authentication-related requests
 type AuthHandler struct {
-	authManager *core.AuthManager
-	database    *core.Database
+	authService *core.AuthService
 }
 
 // NewAuthHandler creates a new auth handler
-func NewAuthHandler(authManager *core.AuthManager, database *core.Database) *AuthHandler {
+func NewAuthHandler() *AuthHandler {
 	return &AuthHandler{
-		authManager: authManager,
-		database:    database,
+		authService: core.NewAuthService(),
 	}
 }
 
-// ShowLogin shows the login page
+// ShowLogin displays the login page
 func (h *AuthHandler) ShowLogin(c echo.Context) error {
 	return c.Render(http.StatusOK, "login.html", map[string]interface{}{
-		"title": "Login - RouterSBC",
+		"Title": "Login - RouterSBC",
 	})
 }
 
-// Login handles login requests
+// Login handles login form submission
 func (h *AuthHandler) Login(c echo.Context) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
-	
+
 	if username == "" || password == "" {
 		return c.Render(http.StatusBadRequest, "login.html", map[string]interface{}{
-			"title": "Login - RouterSBC",
-			"error": "Username and password are required",
+			"Title": "Login - RouterSBC",
+			"Error": "Username and password are required",
 		})
 	}
-	
-	session, user, err := h.authManager.Login(username, password)
+
+	session, err := h.authService.Login(username, password)
 	if err != nil {
 		return c.Render(http.StatusUnauthorized, "login.html", map[string]interface{}{
-			"title": "Login - RouterSBC",
-			"error": "Invalid credentials",
+			"Title": "Login - RouterSBC",
+			"Error": "Invalid credentials",
 		})
 	}
-	
+
 	// Set session cookie
 	cookie := &http.Cookie{
-		Name:     "session",
+		Name:     "session_id",
 		Value:    session.ID,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, // Set to true if using HTTPS
-		MaxAge:   86400, // 24 hours
+		Secure:   false, // Set to true for HTTPS
+		SameSite: http.SameSiteLaxMode,
+		Expires:  session.ExpiresAt,
 	}
 	c.SetCookie(cookie)
-	
-	// Check if first login to show password change alert
-	if user.FirstLogin {
-		return c.Redirect(http.StatusFound, "/system?first_login=true")
+
+	// Check if first login
+	user, err := h.authService.GetUserByUsername(username)
+	if err == nil && user.FirstLogin {
+		// Redirect to password change with alert
+		return c.Redirect(http.StatusFound, "/?first_login=true")
 	}
-	
+
 	return c.Redirect(http.StatusFound, "/")
 }
 
-// Logout handles logout requests
+// Logout handles user logout
 func (h *AuthHandler) Logout(c echo.Context) error {
-	cookie, err := c.Cookie("session")
+	// Get session cookie
+	cookie, err := c.Cookie("session_id")
 	if err == nil {
-		h.authManager.Logout(cookie.Value)
+		// Delete session from database
+		h.authService.DeleteSession(cookie.Value)
 	}
-	
+
 	// Clear session cookie
 	cookie = &http.Cookie{
-		Name:   "session",
-		Value:  "",
-		Path:   "/",
-		MaxAge: -1,
+		Name:     "session_id",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		MaxAge:   -1,
 	}
 	c.SetCookie(cookie)
-	
+
 	return c.Redirect(http.StatusFound, "/login")
 }
 
-// ChangePassword handles password change requests
+// ChangePassword handles password change
 func (h *AuthHandler) ChangePassword(c echo.Context) error {
-	user := c.Get("user").(*core.User)
-	
+	session := c.Get("session").(*core.Session)
 	currentPassword := c.FormValue("current_password")
 	newPassword := c.FormValue("new_password")
 	confirmPassword := c.FormValue("confirm_password")
-	
+
 	if currentPassword == "" || newPassword == "" || confirmPassword == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "All fields are required",
 		})
 	}
-	
+
 	if newPassword != confirmPassword {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "New passwords do not match",
 		})
 	}
-	
+
 	// Verify current password
-	if !core.VerifyPassword(currentPassword, user.PasswordHash) {
-		return c.JSON(http.StatusBadRequest, map[string]string{
+	user, err := h.authService.GetUserByUsername("sbc") // For now, assuming single user
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to get user information",
+		})
+	}
+
+	if !h.authService.VerifyPassword(currentPassword, user.PasswordHash) {
+		return c.JSON(http.StatusUnauthorized, map[string]string{
 			"error": "Current password is incorrect",
 		})
 	}
-	
+
 	// Change password
-	if err := h.authManager.ChangePassword(user.ID, newPassword); err != nil {
+	if err := h.authService.ChangePassword(session.UserID, newPassword); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Failed to change password",
 		})
 	}
-	
+
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "Password changed successfully",
 	})
-}
-
-// RequireAuth middleware to require authentication
-func (h *AuthHandler) RequireAuth(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		cookie, err := c.Cookie("session")
-		if err != nil {
-			return c.Redirect(http.StatusFound, "/login")
-		}
-		
-		user, err := h.authManager.ValidateSession(cookie.Value)
-		if err != nil {
-			return c.Redirect(http.StatusFound, "/login")
-		}
-		
-		c.Set("user", user)
-		return next(c)
-	}
 }
