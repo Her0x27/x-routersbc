@@ -1,0 +1,400 @@
+<!-- IPTables Configuration -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">IPTables Configuration</h3>
+        <div class="card-actions">
+            <div class="dropdown">
+                <a href="#" class="btn-action dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <circle cx="12" cy="12" r="1"/>
+                        <circle cx="12" cy="19" r="1"/>
+                        <circle cx="12" cy="5" r="1"/>
+                    </svg>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end">
+                    <a class="dropdown-item" href="#" onclick="exportIPTables()">Export Rules</a>
+                    <a class="dropdown-item" href="#" onclick="importIPTables()">Import Rules</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#" onclick="resetToDefaults()">Reset to Defaults</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Tables -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <ul class="nav nav-tabs" data-bs-toggle="tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a href="#iptables-filter" class="nav-link active" data-bs-toggle="tab" aria-selected="true" role="tab">
+                            Filter Table
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a href="#iptables-nat" class="nav-link" data-bs-toggle="tab" aria-selected="false" role="tab" tabindex="-1">
+                            NAT Table
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a href="#iptables-mangle" class="nav-link" data-bs-toggle="tab" aria-selected="false" role="tab" tabindex="-1">
+                            Mangle Table
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="tab-content">
+            <!-- Filter Table -->
+            <div class="tab-pane active show" id="iptables-filter" role="tabpanel">
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <h4>Chain Policies</h4>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">INPUT Policy</label>
+                                <select class="form-select" onchange="changeChainPolicy('INPUT', this.value)">
+                                    <option value="ACCEPT">ACCEPT</option>
+                                    <option value="DROP" selected>DROP</option>
+                                    <option value="REJECT">REJECT</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">FORWARD Policy</label>
+                                <select class="form-select" onchange="changeChainPolicy('FORWARD', this.value)">
+                                    <option value="ACCEPT" selected>ACCEPT</option>
+                                    <option value="DROP">DROP</option>
+                                    <option value="REJECT">REJECT</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">OUTPUT Policy</label>
+                                <select class="form-select" onchange="changeChainPolicy('OUTPUT', this.value)">
+                                    <option value="ACCEPT" selected>ACCEPT</option>
+                                    <option value="DROP">DROP</option>
+                                    <option value="REJECT">REJECT</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th>Chain</th>
+                                <th>Target</th>
+                                <th>Protocol</th>
+                                <th>Source</th>
+                                <th>Destination</th>
+                                <th>Options</th>
+                                <th class="w-1">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="filter-rules">
+                            {{if .config.Rules}}
+                                {{range .config.Rules}}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-blue">{{.Chain}}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{if eq .Action "ACCEPT"}}green{{else if eq .Action "DROP"}}red{{else if eq .Action "REJECT"}}yellow{{else}}secondary{{end}}">
+                                            {{.Action}}
+                                        </span>
+                                    </td>
+                                    <td>{{if .Protocol}}{{.Protocol}}{{else}}all{{end}}</td>
+                                    <td>{{if .Source}}{{.Source}}{{else}}anywhere{{end}}</td>
+                                    <td>{{if .Destination}}{{.Destination}}{{else}}anywhere{{end}}</td>
+                                    <td>
+                                        {{if .Port}}{{.Protocol}} dpt:{{.Port}}{{else}}-{{end}}
+                                    </td>
+                                    <td>
+                                        <div class="btn-list flex-nowrap">
+                                            <button class="btn btn-white btn-sm" onclick="editIPTablesRule({{.ID}})">Edit</button>
+                                            <button class="btn btn-white btn-sm" onclick="deleteRule({{.ID}})">Delete</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {{end}}
+                            {{else}}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">No filter rules configured</td>
+                            </tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- NAT Table -->
+            <div class="tab-pane" id="iptables-nat" role="tabpanel">
+                <div class="alert alert-info">
+                    <h4 class="alert-title">NAT Configuration</h4>
+                    <div class="text-muted">Configure Network Address Translation rules for port forwarding and masquerading.</div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th>Chain</th>
+                                <th>Target</th>
+                                <th>Protocol</th>
+                                <th>Source</th>
+                                <th>Destination</th>
+                                <th>Options</th>
+                                <th class="w-1">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="nat-rules">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">No NAT rules configured</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Quick NAT Templates -->
+                <div class="mt-4">
+                    <h4>NAT Templates</h4>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-outline-primary w-100 mb-2" onclick="addNATTemplate('masquerade')">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <circle cx="12" cy="12" r="9"/>
+                                    <path d="M8 12l2 2l4 -4"/>
+                                </svg>
+                                Masquerade
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-outline-primary w-100 mb-2" onclick="addNATTemplate('port_forward')">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M9 12l-4 -4l4 -4"/>
+                                    <path d="M15 12l4 -4l-4 -4"/>
+                                    <path d="M12 3v18"/>
+                                </svg>
+                                Port Forward
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-outline-primary w-100 mb-2" onclick="addNATTemplate('redirect')">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M14 14l4 -4l-4 -4"/>
+                                    <path d="M6 10h11"/>
+                                </svg>
+                                Redirect
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-outline-primary w-100 mb-2" onclick="addNATTemplate('snat')">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M3 12h3m12 0h3"/>
+                                    <path d="M12 3v3m0 12v3"/>
+                                    <circle cx="12" cy="12" r="6"/>
+                                </svg>
+                                SNAT
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mangle Table -->
+            <div class="tab-pane" id="iptables-mangle" role="tabpanel">
+                <div class="alert alert-info">
+                    <h4 class="alert-title">Mangle Table</h4>
+                    <div class="text-muted">Advanced packet manipulation for Quality of Service (QoS) and traffic shaping.</div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table">
+                        <thead>
+                            <tr>
+                                <th>Chain</th>
+                                <th>Target</th>
+                                <th>Protocol</th>
+                                <th>Source</th>
+                                <th>Destination</th>
+                                <th>Options</th>
+                                <th class="w-1">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="mangle-rules">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">No mangle rules configured</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function changeChainPolicy(chain, policy) {
+    if (confirm(`Change ${chain} policy to ${policy}? This will take effect immediately.`)) {
+        fetch('/api/network/firewall/policy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chain: chain, policy: policy })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert('Error: ' + result.error);
+            } else {
+                alert('Policy changed successfully');
+            }
+        })
+        .catch(error => alert('Error changing policy: ' + error));
+    }
+}
+
+function addNATTemplate(template) {
+    let rule = {};
+    
+    switch(template) {
+        case 'masquerade':
+            rule = {
+                name: 'Masquerade Outbound',
+                chain: 'POSTROUTING',
+                action: 'MASQUERADE',
+                table: 'nat',
+                source: '192.168.1.0/24'
+            };
+            break;
+        case 'port_forward':
+            const externalPort = prompt('External port:', '8080');
+            const internalIP = prompt('Internal IP:', '192.168.1.100');
+            const internalPort = prompt('Internal port:', '80');
+            if (externalPort && internalIP && internalPort) {
+                rule = {
+                    name: `Forward ${externalPort} to ${internalIP}:${internalPort}`,
+                    chain: 'PREROUTING',
+                    action: 'DNAT',
+                    table: 'nat',
+                    protocol: 'tcp',
+                    port: externalPort,
+                    destination: `${internalIP}:${internalPort}`
+                };
+            } else {
+                return;
+            }
+            break;
+        case 'redirect':
+            rule = {
+                name: 'HTTP Redirect',
+                chain: 'OUTPUT',
+                action: 'REDIRECT',
+                table: 'nat',
+                protocol: 'tcp',
+                port: '80'
+            };
+            break;
+        case 'snat':
+            rule = {
+                name: 'SNAT Rule',
+                chain: 'POSTROUTING',
+                action: 'SNAT',
+                table: 'nat',
+                destination: '192.168.1.1'
+            };
+            break;
+    }
+    
+    if (rule.name) {
+        fetch('/api/network/firewall/rules', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(rule)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert('Error: ' + result.error);
+            } else {
+                alert('NAT rule added successfully');
+                location.reload();
+            }
+        })
+        .catch(error => alert('Error adding NAT rule: ' + error));
+    }
+}
+
+function editIPTablesRule(ruleId) {
+    // Load rule and show in modal
+    fetch(`/api/network/firewall/rules/${ruleId}`)
+        .then(response => response.json())
+        .then(rule => {
+            const modal = new bootstrap.Modal(document.getElementById('firewall-rule-modal'));
+            const form = document.getElementById('firewall-rule-form');
+            
+            // Populate form with rule data
+            form.elements['name'].value = rule.name;
+            form.elements['chain'].value = rule.chain;
+            form.elements['action'].value = rule.action;
+            form.elements['protocol'].value = rule.protocol;
+            form.elements['source'].value = rule.source;
+            form.elements['destination'].value = rule.destination;
+            form.elements['port'].value = rule.port;
+            form.elements['enabled'].checked = rule.enabled;
+            
+            modal.show();
+        })
+        .catch(error => alert('Error loading rule: ' + error));
+}
+
+function exportIPTables() {
+    fetch('/api/network/firewall/export?format=iptables')
+        .then(response => response.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'iptables-rules.txt';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+        });
+}
+
+function importIPTables() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.txt,.rules';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const formData = new FormData();
+            formData.append('rules_file', file);
+            formData.append('format', 'iptables');
+            
+            fetch('/api/network/firewall/import', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.error) {
+                    alert('Error: ' + result.error);
+                } else {
+                    alert('IPTables rules imported successfully');
+                    location.reload();
+                }
+            })
+            .catch(error => alert('Error importing rules: ' + error));
+        }
+    };
+    input.click();
+}
+</script>
