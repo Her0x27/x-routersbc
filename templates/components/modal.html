@@ -1,0 +1,277 @@
+<!-- Generic Modal Component -->
+<div class="modal modal-blur fade" id="generic-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal-title">Modal Title</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+            <div class="modal-footer" id="modal-footer">
+                <a href="#" class="btn btn-link link-secondary" data-bs-dismiss="modal">
+                    Cancel
+                </a>
+                <a href="#" class="btn btn-primary ms-auto" id="modal-save-btn">
+                    Save changes
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interface Configuration Modal -->
+<div class="modal modal-blur fade" id="interface-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Configure Network Interface</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="interface-form">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Interface Name</label>
+                                <input type="text" class="form-control" name="name" placeholder="eth0" required>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Interface Type</label>
+                                <select class="form-select" name="type" required>
+                                    <option value="">Select type...</option>
+                                    <option value="ethernet">Ethernet</option>
+                                    <option value="wireless">Wireless</option>
+                                    <option value="bridge">Bridge</option>
+                                    <option value="vlan">VLAN</option>
+                                    <option value="vpn">VPN</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">IP Address</label>
+                                <input type="text" class="form-control" name="ip_address" placeholder="192.168.1.1">
+                                <small class="form-hint">Leave empty for DHCP</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Netmask</label>
+                                <input type="text" class="form-control" name="netmask" placeholder="255.255.255.0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Gateway</label>
+                                <input type="text" class="form-control" name="gateway" placeholder="192.168.1.1">
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="enabled" checked>
+                                    <span class="form-check-label">Enable Interface</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-link link-secondary" data-bs-dismiss="modal">Cancel</a>
+                    <button type="submit" class="btn btn-primary ms-auto">Save Interface</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Static Route Modal -->
+<div class="modal modal-blur fade" id="route-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Static Route</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="route-form">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Destination</label>
+                                <input type="text" class="form-control" name="destination" placeholder="192.168.2.0" required>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Netmask</label>
+                                <input type="text" class="form-control" name="netmask" placeholder="255.255.255.0" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Gateway</label>
+                                <input type="text" class="form-control" name="gateway" placeholder="192.168.1.1" required>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Interface</label>
+                                <select class="form-select" name="interface" required>
+                                    <option value="">Select interface...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Metric</label>
+                                <input type="number" class="form-control" name="metric" placeholder="1" value="1">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-link link-secondary" data-bs-dismiss="modal">Cancel</a>
+                    <button type="submit" class="btn btn-primary ms-auto">Add Route</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Firewall Rule Modal -->
+<div class="modal modal-blur fade" id="firewall-rule-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Firewall Rule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="firewall-rule-form">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Rule Name</label>
+                                <input type="text" class="form-control" name="name" placeholder="Allow SSH" required>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Chain</label>
+                                <select class="form-select" name="chain" required>
+                                    <option value="">Select chain...</option>
+                                    <option value="INPUT">INPUT</option>
+                                    <option value="OUTPUT">OUTPUT</option>
+                                    <option value="FORWARD">FORWARD</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Action</label>
+                                <select class="form-select" name="action" required>
+                                    <option value="">Select action...</option>
+                                    <option value="ACCEPT">ACCEPT</option>
+                                    <option value="DROP">DROP</option>
+                                    <option value="REJECT">REJECT</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Protocol</label>
+                                <select class="form-select" name="protocol">
+                                    <option value="">All</option>
+                                    <option value="tcp">TCP</option>
+                                    <option value="udp">UDP</option>
+                                    <option value="icmp">ICMP</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Source</label>
+                                <input type="text" class="form-control" name="source" placeholder="192.168.1.0/24">
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Destination</label>
+                                <input type="text" class="form-control" name="destination" placeholder="192.168.2.0/24">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Port</label>
+                                <input type="text" class="form-control" name="port" placeholder="22 or 80:443">
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="enabled" checked>
+                                    <span class="form-check-label">Enable Rule</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-link link-secondary" data-bs-dismiss="modal">Cancel</a>
+                    <button type="submit" class="btn btn-primary ms-auto">Add Rule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Password Change Modal -->
+<div class="modal modal-blur fade" id="password-modal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Change Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="password-form">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Current Password</label>
+                        <input type="password" class="form-control" name="current_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">New Password</label>
+                        <input type="password" class="form-control" name="new_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control" name="confirm_password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-link link-secondary" data-bs-dismiss="modal">Cancel</a>
+                    <button type="submit" class="btn btn-primary ms-auto">Change Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
