@@ -2,48 +2,47 @@ package core
 
 import (
 	"database/sql"
-	"fmt"
+	"os"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var db *sql.DB
-
-// InitDatabase initializes the SQLite database
-func InitDatabase() error {
-	var err error
-	db, err = sql.Open("sqlite3", "routersbc.sqlitedb")
+func InitDatabase() (*sql.DB, error) {
+	dbPath := "routersbc.sqlitedb"
+	
+	// Check if database exists
+	_, err := os.Stat(dbPath)
+	isNewDB := os.IsNotExist(err)
+	
+	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
-		return fmt.Errorf("failed to open database: %v", err)
+		return nil, err
 	}
-
-	// Test connection
-	if err = db.Ping(); err != nil {
-		return fmt.Errorf("failed to ping database: %v", err)
+	
+	if err := db.Ping(); err != nil {
+		return nil, err
 	}
-
-	// Create tables
-	if err = createTables(); err != nil {
-		return fmt.Errorf("failed to create tables: %v", err)
+	
+	if isNewDB {
+		if err := createTables(db); err != nil {
+			return nil, err
+		}
+		if err := createDefaultUser(db); err != nil {
+			return nil, err
+		}
 	}
-
-	// Create default admin user
-	authService := NewAuthService()
-	if err = authService.CreateDefaultUser(); err != nil {
-		return fmt.Errorf("failed to create default user: %v", err)
-	}
-
-	return nil
+	
+	return db, nil
 }
 
-// createTables creates the necessary database tables
-func createTables() error {
-	tables := []string{
+func createTables(db *sql.DB) error {
+	queries := []string{
 		`CREATE TABLE IF NOT EXISTS users (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			username TEXT UNIQUE NOT NULL,
 			password_hash TEXT NOT NULL,
-			first_login BOOLEAN DEFAULT 1,
+			first_login BOOLEAN DEFAULT TRUE,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 		`CREATE TABLE IF NOT EXISTS sessions (
@@ -57,44 +56,62 @@ func createTables() error {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT UNIQUE NOT NULL,
 			type TEXT NOT NULL,
-			enabled BOOLEAN DEFAULT 1,
+			enabled BOOLEAN DEFAULT TRUE,
 			config TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
-		`CREATE TABLE IF NOT EXISTS network_routes (
+		`CREATE TABLE IF NOT EXISTS firewall_rules (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL,
+			chain TEXT NOT NULL,
+			rule_text TEXT NOT NULL,
+			enabled BOOLEAN DEFAULT TRUE,
+			position INTEGER DEFAULT 0,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS static_routes (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			interface TEXT NOT NULL,
 			destination TEXT NOT NULL,
 			gateway TEXT NOT NULL,
 			metric INTEGER DEFAULT 0,
-			enabled BOOLEAN DEFAULT 1,
+			enabled BOOLEAN DEFAULT TRUE,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
-		`CREATE TABLE IF NOT EXISTS firewall_rules (
+		`CREATE TABLE IF NOT EXISTS dns_zones (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			chain TEXT NOT NULL,
-			rule_text TEXT NOT NULL,
-			position INTEGER DEFAULT 0,
-			enabled BOOLEAN DEFAULT 1,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		)`,
-		`CREATE TABLE IF NOT EXISTS system_config (
-			key TEXT PRIMARY KEY,
+			zone TEXT NOT NULL,
+			record_type TEXT NOT NULL,
 			value TEXT NOT NULL,
-			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			enabled BOOLEAN DEFAULT TRUE,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 	}
-
-	for _, table := range tables {
-		if _, err := db.Exec(table); err != nil {
-			return fmt.Errorf("failed to create table: %v", err)
+	
+	for _, query := range queries {
+		if _, err := db.Exec(query); err != nil {
+			return err
 		}
 	}
-
+	
 	return nil
 }
 
-// GetDB returns the database connection
-func GetDB() *sql.DB {
-	return db
+func createDefaultUser(db *sql.DB) error {
+	hashedPassword, err := HashPassword("sbc")
+	if err != nil {
+		return err
+	}
+	
+	_, err = db.Exec(`
+		INSERT INTO users (username, password_hash, first_login) 
+		VALUES (?, ?, ?)
+	`, "sbc", hashedPassword, true)
+	
+	return err
+}
+
+func CleanExpiredSessions(db *sql.DB) error {
+	_, err := db.Exec("DELETE FROM sessions WHERE expires_at < ?", time.Now())
+	return err
 }

@@ -1,79 +1,94 @@
 package core
 
 import (
+	"database/sql"
 	"html/template"
-	"io"
 	"net/http"
 
-	"github.com/Her0x27/x-routersbc/routes"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/Her0x27/x-routersbc/handlers"
+	"github.com/Her0x27/x-routersbc/routes"
 )
 
-// TemplateRenderer implements echo.Renderer interface
+type Server struct {
+	Echo *echo.Echo
+	DB   *sql.DB
+}
+
 type TemplateRenderer struct {
 	templates *template.Template
 }
 
-// Render renders a template document
-func (t *TemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+func (t *TemplateRenderer) Render(w http.ResponseWriter, name string, data interface{}, c echo.Context) error {
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
-// NewServer creates and configures a new Echo server instance
-func NewServer() *echo.Echo {
+func NewServer(db *sql.DB) *Server {
 	e := echo.New()
-
-	// Configure template renderer
-	renderer := &TemplateRenderer{
-		templates: template.Must(template.ParseGlob("templates/*/*.html")),
+	
+	// Set custom error handler
+	e.HTTPErrorHandler = customHTTPErrorHandler
+	
+	// Load templates
+	t := &TemplateRenderer{
+		templates: template.Must(template.ParseGlob("templates/**/*.html")),
 	}
-	e.Renderer = renderer
-
+	e.Renderer = t
+	
 	// Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
-
+	e.Use(SessionMiddleware(db))
+	
 	// Static files
 	e.Static("/static", "static")
-
-	// Custom error handler
-	e.HTTPErrorHandler = customErrorHandler
-
+	
+	// Create server instance
+	server := &Server{
+		Echo: e,
+		DB:   db,
+	}
+	
+	// Initialize handlers
+	authHandler := handlers.NewAuthHandler(db)
+	networkHandler := handlers.NewNetworkHandler(db)
+	systemHandler := handlers.NewSystemHandler(db)
+	
 	// Setup routes
-	routes.SetupRoutes(e)
-
-	return e
+	routes.SetupRoutes(e, authHandler, networkHandler, systemHandler)
+	
+	// Setup WebSocket
+	SetupWebSocket(e, db)
+	
+	return server
 }
 
-// customErrorHandler handles HTTP errors with custom pages
-func customErrorHandler(err error, c echo.Context) {
-	code := http.StatusInternalServerError
-	message := "Internal Server Error"
+func (s *Server) Start(address string) error {
+	return s.Echo.Start(address)
+}
 
+func customHTTPErrorHandler(err error, c echo.Context) {
+	code := http.StatusInternalServerError
 	if he, ok := err.(*echo.HTTPError); ok {
 		code = he.Code
-		message = he.Message.(string)
 	}
-
-	// Try to render custom error page
+	
 	switch code {
 	case 404:
-		if err := c.Render(code, "404.html", map[string]interface{}{
-			"Title":   "Page Not Found",
-			"Message": "The requested page could not be found.",
-		}); err != nil {
-			c.String(code, message)
-		}
+		c.Render(code, "404.html", map[string]interface{}{
+			"Title": "Page Not Found",
+			"Error": "The requested page could not be found.",
+		})
 	case 501:
-		if err := c.Render(code, "501.html", map[string]interface{}{
-			"Title":   "Not Implemented",
-			"Message": "This feature is not yet implemented.",
-		}); err != nil {
-			c.String(code, message)
-		}
+		c.Render(code, "501.html", map[string]interface{}{
+			"Title": "Not Implemented",
+			"Error": "This feature is not yet implemented.",
+		})
 	default:
-		c.String(code, message)
+		c.JSON(code, map[string]string{
+			"error": err.Error(),
+		})
 	}
 }

@@ -1,5 +1,4 @@
 {{define "content"}}
-<!-- Page header -->
 <div class="page-header d-print-none">
     <div class="container-xl">
         <div class="row g-2 align-items-center">
@@ -10,578 +9,772 @@
                         <li class="breadcrumb-item active" aria-current="page">Wireless</li>
                     </ol>
                 </nav>
-                <h2 class="page-title">
-                    Wireless Configuration
-                </h2>
+                <h2 class="page-title">Wireless Configuration</h2>
+                <div class="text-muted mt-1">Configure WiFi access point and client connections</div>
             </div>
             <div class="col-auto ms-auto d-print-none">
                 <div class="btn-list">
-                    <button type="button" class="btn btn-outline-primary" onclick="scanNetworks()">
+                    <a href="#" class="btn btn-outline-secondary" onclick="scanWiFiNetworks()">
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                            <path d="M12 18l.01 0"/>
+                            <path d="M12 18h.01"/>
                             <path d="M9.172 15.172a4 4 0 0 1 5.656 0"/>
                             <path d="M6.343 12.343a8 8 0 0 1 11.314 0"/>
                             <path d="M3.515 9.515c4.686 -4.687 12.284 -4.687 17 0"/>
                         </svg>
                         Scan Networks
-                    </button>
-                    <button type="button" class="btn btn-primary" onclick="addWirelessInterface()">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                            <line x1="12" y1="5" x2="12" y2="19"/>
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        Add Interface
-                    </button>
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 </div>
-<!-- Page body -->
+
 <div class="page-body">
     <div class="container-xl">
-        <!-- Tabs -->
+        <!-- Wireless Status -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Wireless Status</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-3">
+                                <div class="text-muted">Access Point</div>
+                                <div class="h3">
+                                    {{if .WirelessConfig.APEnabled}}
+                                    <span class="badge bg-success">Active</span>
+                                    {{else}}
+                                    <span class="badge bg-secondary">Disabled</span>
+                                    {{end}}
+                                </div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="text-muted">Connected Clients</div>
+                                <div class="h3" id="wirelessClients">0</div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="text-muted">Station Mode</div>
+                                <div class="h3">
+                                    {{if .WirelessConfig.STAEnabled}}
+                                    <span class="badge bg-success">Connected</span>
+                                    {{else}}
+                                    <span class="badge bg-secondary">Disabled</span>
+                                    {{end}}
+                                </div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="text-muted">Signal Strength</div>
+                                <div class="h3" id="signalStrength">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wireless Configuration Tabs -->
         <div class="card">
             <div class="card-header">
-                <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <a href="#tabs-ap" class="nav-link active" data-bs-toggle="tab" aria-selected="true" role="tab">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M12 18l.01 0"/>
-                                <path d="M9.172 15.172a4 4 0 0 1 5.656 0"/>
-                                <path d="M6.343 12.343a8 8 0 0 1 11.314 0"/>
-                                <path d="M3.515 9.515c4.686 -4.687 12.284 -4.687 17 0"/>
-                            </svg>
-                            Access Point (AP)
-                        </a>
+                <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs">
+                    <li class="nav-item">
+                        <a href="#tabs-ap" class="nav-link active" data-bs-toggle="tab">Access Point</a>
                     </li>
-                    <li class="nav-item" role="presentation">
-                        <a href="#tabs-sta" class="nav-link" data-bs-toggle="tab" aria-selected="false" role="tab" tabindex="-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M3 7a4 4 0 0 1 4 -4h10a4 4 0 0 1 4 4v10a4 4 0 0 1 -4 4h-10a4 4 0 0 1 -4 -4v-10z"/>
-                                <path d="M9 9h6v6h-6z"/>
-                            </svg>
-                            Station (STA)
-                        </a>
+                    <li class="nav-item">
+                        <a href="#tabs-sta" class="nav-link" data-bs-toggle="tab">Station Mode</a>
                     </li>
-                    <li class="nav-item" role="presentation">
-                        <a href="#tabs-adhoc" class="nav-link" data-bs-toggle="tab" aria-selected="false" role="tab" tabindex="-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <circle cx="12" cy="12" r="4"/>
-                                <circle cx="12" cy="12" r="9"/>
-                                <path d="m15 9l-3 3"/>
-                                <path d="m9 15l3 -3"/>
-                            </svg>
-                            ADHOC / IBSS
-                        </a>
+                    <li class="nav-item">
+                        <a href="#tabs-adhoc" class="nav-link" data-bs-toggle="tab">Ad-Hoc / IBSS</a>
                     </li>
-                    <li class="nav-item" role="presentation">
-                        <a href="#tabs-monitor" class="nav-link" data-bs-toggle="tab" aria-selected="false" role="tab" tabindex="-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <circle cx="12" cy="12" r="2"/>
-                                <path d="m22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7"/>
-                            </svg>
-                            Monitor
-                        </a>
+                    <li class="nav-item">
+                        <a href="#tabs-monitor" class="nav-link" data-bs-toggle="tab">Monitor Mode</a>
                     </li>
                 </ul>
             </div>
             <div class="card-body">
                 <div class="tab-content">
-                    <!-- Access Point Tab -->
-                    <div class="tab-pane active show" id="tabs-ap" role="tabpanel">
-                        <div class="table-responsive">
-                            <table class="table table-vcenter card-table">
-                                <thead>
-                                    <tr>
-                                        <th>Interface</th>
-                                        <th>SSID</th>
-                                        <th>Security</th>
-                                        <th>Channel</th>
-                                        <th>Status</th>
-                                        <th>Clients</th>
-                                        <th class="w-1">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="ap-interfaces">
-                                    {{if .config.Interfaces}}
-                                        {{range .config.Interfaces}}
-                                            {{if eq .Mode "AP"}}
-                                            <tr>
-                                                <td>{{.Name}}</td>
-                                                <td>{{.SSID}}</td>
-                                                <td>
-                                                    <span class="badge bg-{{if eq .Security "WPA2"}}green{{else if eq .Security "WPA3"}}blue{{else if eq .Security "Open"}}yellow{{else}}secondary{{end}}">
-                                                        {{.Security}}
-                                                    </span>
-                                                </td>
-                                                <td>{{.Channel}}</td>
-                                                <td>
-                                                    {{if .Enabled}}
-                                                        <span class="status status-green">
-                                                            <span class="status-dot status-dot-animated"></span>
-                                                            Active
-                                                        </span>
-                                                    {{else}}
-                                                        <span class="status status-red">
-                                                            <span class="status-dot"></span>
-                                                            Inactive
-                                                        </span>
-                                                    {{end}}
-                                                </td>
-                                                <td>0</td>
-                                                <td>
-                                                    <div class="btn-list flex-nowrap">
-                                                        <button class="btn btn-white btn-sm" onclick="editWirelessInterface('{{.Name}}')">Edit</button>
-                                                        <button class="btn btn-white btn-sm" onclick="deleteWirelessInterface('{{.Name}}')">Delete</button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {{end}}
-                                        {{end}}
-                                    {{else}}
-                                    <tr>
-                                        <td colspan="7" class="text-center text-muted">No Access Points configured</td>
-                                    </tr>
-                                    {{end}}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <!-- Station Tab -->
-                    <div class="tab-pane" id="tabs-sta" role="tabpanel">
-                        <div class="mb-3">
-                            <button type="button" class="btn btn-outline-primary" onclick="scanNetworks()">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                    <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/>
-                                    <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>
-                                </svg>
-                                Refresh Scan
-                            </button>
-                        </div>
-                        
-                        <div class="table-responsive">
-                            <table class="table table-vcenter card-table">
-                                <thead>
-                                    <tr>
-                                        <th>SSID</th>
-                                        <th>Security</th>
-                                        <th>Signal</th>
-                                        <th>Channel</th>
-                                        <th>Status</th>
-                                        <th class="w-1">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="available-networks">
-                                    <tr>
-                                        <td colspan="6" class="text-center text-muted">Click "Refresh Scan" to discover networks</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <div class="mt-4">
-                            <h4>Connected Networks</h4>
+                    <!-- Access Point Configuration -->
+                    <div class="tab-pane active show" id="tabs-ap">
+                        <form id="apConfigForm">
+                            <div class="mb-3">
+                                <label class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="ap_enabled" {{if .WirelessConfig.APEnabled}}checked{{end}}>
+                                    <span class="form-check-label">Enable Access Point</span>
+                                </label>
+                            </div>
+
+                            <div id="apSettings" {{if not .WirelessConfig.APEnabled}}style="display: none;"{{end}}>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Wireless Interface</label>
+                                            <select class="form-select" name="ap_interface">
+                                                <option value="">Select interface...</option>
+                                                <option value="wlan0">wlan0</option>
+                                                <option value="wlan1">wlan1</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Network Name (SSID)</label>
+                                            <input type="text" class="form-control" name="ap_ssid" placeholder="RouterSBC-WiFi" value="{{if .WirelessConfig.APConfig.ssid}}{{.WirelessConfig.APConfig.ssid}}{{end}}" maxlength="32" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Security Mode</label>
+                                            <select class="form-select" name="ap_security" required>
+                                                <option value="none">Open (No Security)</option>
+                                                <option value="wpa2" selected>WPA2-PSK</option>
+                                                <option value="wpa3">WPA3-SAE</option>
+                                                <option value="mixed">WPA2/WPA3 Mixed</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3" id="apPasswordField">
+                                            <label class="form-label">Password</label>
+                                            <input type="password" class="form-control" name="ap_password" placeholder="WiFi password" minlength="8" maxlength="63" required>
+                                            <small class="form-hint">8-63 characters</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Channel</label>
+                                            <select class="form-select" name="ap_channel">
+                                                <option value="auto">Auto</option>
+                                                <option value="1">1 (2412 MHz)</option>
+                                                <option value="6">6 (2437 MHz)</option>
+                                                <option value="11">11 (2462 MHz)</option>
+                                                <option value="36">36 (5180 MHz)</option>
+                                                <option value="44">44 (5220 MHz)</option>
+                                                <option value="149">149 (5745 MHz)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Channel Width</label>
+                                            <select class="form-select" name="ap_bandwidth">
+                                                <option value="20">20 MHz</option>
+                                                <option value="40">40 MHz</option>
+                                                <option value="80">80 MHz</option>
+                                                <option value="160">160 MHz</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Country Code</label>
+                                            <select class="form-select" name="ap_country">
+                                                <option value="US">United States</option>
+                                                <option value="GB">United Kingdom</option>
+                                                <option value="DE">Germany</option>
+                                                <option value="FR">France</option>
+                                                <option value="RU">Russia</option>
+                                                <option value="CN">China</option>
+                                                <option value="JP">Japan</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Max Clients</label>
+                                            <input type="number" class="form-control" name="ap_max_clients" value="50" min="1" max="255">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="ap_hidden">
+                                        <span class="form-check-label">Hide SSID (Hidden Network)</span>
+                                    </label>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="ap_isolation">
+                                        <span class="form-check-label">Client Isolation</span>
+                                    </label>
+                                    <small class="form-hint">Prevent clients from communicating with each other</small>
+                                </div>
+                            </div>
+
+                            <div class="form-footer">
+                                <button type="submit" class="btn btn-primary">Save Access Point Configuration</button>
+                            </div>
+                        </form>
+
+                        <!-- Connected Clients -->
+                        <div class="mt-4" id="connectedClients">
+                            <h4>Connected Clients</h4>
                             <div class="table-responsive">
-                                <table class="table table-vcenter card-table">
+                                <table class="table table-vcenter">
                                     <thead>
                                         <tr>
-                                            <th>Interface</th>
-                                            <th>SSID</th>
-                                            <th>Signal</th>
+                                            <th>Device</th>
+                                            <th>MAC Address</th>
                                             <th>IP Address</th>
-                                            <th>Status</th>
+                                            <th>Signal</th>
+                                            <th>Connected Time</th>
                                             <th class="w-1">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="connected-networks">
-                                        {{if .config.Interfaces}}
-                                            {{range .config.Interfaces}}
-                                                {{if eq .Mode "STA"}}
-                                                <tr>
-                                                    <td>{{.Name}}</td>
-                                                    <td>{{.SSID}}</td>
-                                                    <td>
-                                                        <div class="progress progress-sm">
-                                                            <div class="progress-bar" style="width: 75%" role="progressbar"></div>
-                                                        </div>
-                                                        <small class="text-muted">-45 dBm</small>
-                                                    </td>
-                                                    <td>192.168.1.100</td>
-                                                    <td>
-                                                        {{if .Enabled}}
-                                                            <span class="status status-green">
-                                                                <span class="status-dot status-dot-animated"></span>
-                                                                Connected
-                                                            </span>
-                                                        {{else}}
-                                                            <span class="status status-red">
-                                                                <span class="status-dot"></span>
-                                                                Disconnected
-                                                            </span>
-                                                        {{end}}
-                                                    </td>
-                                                    <td>
-                                                        <div class="btn-list flex-nowrap">
-                                                            <button class="btn btn-white btn-sm" onclick="disconnectNetwork('{{.Name}}')">Disconnect</button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                                {{end}}
-                                            {{end}}
-                                        {{else}}
-                                        <tr>
-                                            <td colspan="6" class="text-center text-muted">No networks connected</td>
-                                        </tr>
-                                        {{end}}
+                                    <tbody id="connectedClientsTable">
+                                        <!-- Will be populated dynamically -->
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- ADHOC Tab -->
-                    <div class="tab-pane" id="tabs-adhoc" role="tabpanel">
-                        <div class="alert alert-info">
-                            <h4 class="alert-title">ADHOC / IBSS Mode</h4>
-                            <div class="text-muted">Create peer-to-peer wireless networks without an access point.</div>
-                        </div>
-                        
-                        <div class="table-responsive">
-                            <table class="table table-vcenter card-table">
-                                <thead>
-                                    <tr>
-                                        <th>Interface</th>
-                                        <th>SSID</th>
-                                        <th>Channel</th>
-                                        <th>Cell ID</th>
-                                        <th>Status</th>
-                                        <th class="w-1">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="adhoc-interfaces">
-                                    {{if .config.Interfaces}}
-                                        {{range .config.Interfaces}}
-                                            {{if eq .Mode "ADHOC"}}
-                                            <tr>
-                                                <td>{{.Name}}</td>
-                                                <td>{{.SSID}}</td>
-                                                <td>{{.Channel}}</td>
-                                                <td>Auto</td>
-                                                <td>
-                                                    {{if .Enabled}}
-                                                        <span class="status status-green">
-                                                            <span class="status-dot status-dot-animated"></span>
-                                                            Active
-                                                        </span>
-                                                    {{else}}
-                                                        <span class="status status-red">
-                                                            <span class="status-dot"></span>
-                                                            Inactive
-                                                        </span>
-                                                    {{end}}
-                                                </td>
-                                                <td>
-                                                    <div class="btn-list flex-nowrap">
-                                                        <button class="btn btn-white btn-sm" onclick="editWirelessInterface('{{.Name}}')">Edit</button>
-                                                        <button class="btn btn-white btn-sm" onclick="deleteWirelessInterface('{{.Name}}')">Delete</button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {{end}}
-                                        {{end}}
-                                    {{else}}
-                                    <tr>
-                                        <td colspan="6" class="text-center text-muted">No ADHOC networks configured</td>
-                                    </tr>
-                                    {{end}}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <!-- Monitor Tab -->
-                    <div class="tab-pane" id="tabs-monitor" role="tabpanel">
-                        <div class="alert alert-warning">
-                            <h4 class="alert-title">Monitor Mode</h4>
-                            <div class="text-muted">Monitor mode allows passive monitoring of wireless traffic. Use with caution and ensure compliance with local regulations.</div>
-                        </div>
-                        
-                        <div class="table-responsive">
-                            <table class="table table-vcenter card-table">
-                                <thead>
-                                    <tr>
-                                        <th>Interface</th>
-                                        <th>Channel</th>
-                                        <th>Frequency</th>
-                                        <th>Status</th>
-                                        <th>Packets</th>
-                                        <th class="w-1">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="monitor-interfaces">
-                                    {{if .config.Interfaces}}
-                                        {{range .config.Interfaces}}
-                                            {{if eq .Mode "MONITOR"}}
-                                            <tr>
-                                                <td>{{.Name}}</td>
-                                                <td>{{.Channel}}</td>
-                                                <td>2.4 GHz</td>
-                                                <td>
-                                                    {{if .Enabled}}
-                                                        <span class="status status-green">
-                                                            <span class="status-dot status-dot-animated"></span>
-                                                            Monitoring
-                                                        </span>
-                                                    {{else}}
-                                                        <span class="status status-red">
-                                                            <span class="status-dot"></span>
-                                                            Stopped
-                                                        </span>
-                                                    {{end}}
-                                                </td>
-                                                <td>0</td>
-                                                <td>
-                                                    <div class="btn-list flex-nowrap">
-                                                        <button class="btn btn-white btn-sm" onclick="editWirelessInterface('{{.Name}}')">Edit</button>
-                                                        <button class="btn btn-white btn-sm" onclick="deleteWirelessInterface('{{.Name}}')">Delete</button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {{end}}
-                                        {{end}}
-                                    {{else}}
-                                    <tr>
-                                        <td colspan="6" class="text-center text-muted">No monitor interfaces configured</td>
-                                    </tr>
-                                    {{end}}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Wireless Network Connection Modal -->
-<div class="modal modal-blur fade" id="wifi-connect-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Connect to Network</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <!-- Station Mode Configuration -->
+                    <div class="tab-pane" id="tabs-sta">
+                        <form id="staConfigForm">
+                            <div class="mb-3">
+                                <label class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="sta_enabled" {{if .WirelessConfig.STAEnabled}}checked{{end}}>
+                                    <span class="form-check-label">Enable Station Mode (WiFi Client)</span>
+                                </label>
+                            </div>
+
+                            <div id="staSettings" {{if not .WirelessConfig.STAEnabled}}style="display: none;"{{end}}>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Wireless Interface</label>
+                                            <select class="form-select" name="sta_interface">
+                                                <option value="">Select interface...</option>
+                                                <option value="wlan0">wlan0</option>
+                                                <option value="wlan1">wlan1</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Network (SSID)</label>
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" name="sta_ssid" placeholder="Network name" required>
+                                                <button class="btn btn-outline-secondary" type="button" onclick="showAvailableNetworks()">Browse</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Security</label>
+                                            <select class="form-select" name="sta_security">
+                                                <option value="none">Open</option>
+                                                <option value="wep">WEP</option>
+                                                <option value="wpa">WPA-PSK</option>
+                                                <option value="wpa2">WPA2-PSK</option>
+                                                <option value="wpa3">WPA3-SAE</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Password</label>
+                                            <input type="password" class="form-control" name="sta_password" placeholder="Network password">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="sta_auto_connect" checked>
+                                        <span class="form-check-label">Auto-connect on startup</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-footer">
+                                <button type="submit" class="btn btn-primary">Save Station Configuration</button>
+                                <button type="button" class="btn btn-outline-secondary ms-2" onclick="connectToNetwork()">Connect Now</button>
+                            </div>
+                        </form>
+
+                        <!-- Available Networks -->
+                        <div class="mt-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4>Available Networks</h4>
+                                <button type="button" class="btn btn-outline-primary" onclick="scanWiFiNetworks()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/>
+                                        <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>
+                                    </svg>
+                                    Refresh
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-vcenter">
+                                    <thead>
+                                        <tr>
+                                            <th>SSID</th>
+                                            <th>Security</th>
+                                            <th>Signal</th>
+                                            <th>Channel</th>
+                                            <th>Frequency</th>
+                                            <th class="w-1">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="availableNetworksTable">
+                                        <tr>
+                                            <td colspan="6" class="text-center text-muted">Click "Refresh" to scan for networks</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ad-Hoc Mode Configuration -->
+                    <div class="tab-pane" id="tabs-adhoc">
+                        <form id="adhocConfigForm">
+                            <div class="mb-3">
+                                <label class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="adhoc_enabled">
+                                    <span class="form-check-label">Enable Ad-Hoc Mode (IBSS)</span>
+                                </label>
+                                <small class="form-hint">Create a peer-to-peer wireless network</small>
+                            </div>
+
+                            <div id="adhocSettings" style="display: none;">
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Wireless Interface</label>
+                                            <select class="form-select" name="adhoc_interface">
+                                                <option value="">Select interface...</option>
+                                                <option value="wlan0">wlan0</option>
+                                                <option value="wlan1">wlan1</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Network Name (SSID)</label>
+                                            <input type="text" class="form-control" name="adhoc_ssid" placeholder="IBSS-Network">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Channel</label>
+                                            <select class="form-select" name="adhoc_channel">
+                                                <option value="1">1 (2412 MHz)</option>
+                                                <option value="6" selected>6 (2437 MHz)</option>
+                                                <option value="11">11 (2462 MHz)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Cell ID (BSSID)</label>
+                                            <input type="text" class="form-control" name="adhoc_bssid" placeholder="02:11:22:33:44:55" pattern="([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})">
+                                            <small class="form-hint">Leave empty for auto-generation</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">IP Configuration</label>
+                                    <div class="row">
+                                        <div class="col-lg-6">
+                                            <input type="text" class="form-control" name="adhoc_ip" placeholder="192.168.10.1">
+                                        </div>
+                                        <div class="col-lg-6">
+                                            <input type="text" class="form-control" name="adhoc_netmask" placeholder="255.255.255.0">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-footer">
+                                <button type="submit" class="btn btn-primary">Save Ad-Hoc Configuration</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Monitor Mode Configuration -->
+                    <div class="tab-pane" id="tabs-monitor">
+                        <form id="monitorConfigForm">
+                            <div class="mb-3">
+                                <label class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="monitor_enabled">
+                                    <span class="form-check-label">Enable Monitor Mode</span>
+                                </label>
+                                <small class="form-hint">Monitor wireless traffic (packet capture)</small>
+                            </div>
+
+                            <div id="monitorSettings" style="display: none;">
+                                <div class="alert alert-warning">
+                                    <h4>Warning</h4>
+                                    <p>Monitor mode will disable normal wireless connectivity on the selected interface. Use this mode only for network analysis and debugging.</p>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Wireless Interface</label>
+                                            <select class="form-select" name="monitor_interface">
+                                                <option value="">Select interface...</option>
+                                                <option value="wlan0">wlan0</option>
+                                                <option value="wlan1">wlan1</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Monitor Channel</label>
+                                            <select class="form-select" name="monitor_channel">
+                                                <option value="1">1 (2412 MHz)</option>
+                                                <option value="6">6 (2437 MHz)</option>
+                                                <option value="11">11 (2462 MHz)</option>
+                                                <option value="36">36 (5180 MHz)</option>
+                                                <option value="44">44 (5220 MHz)</option>
+                                                <option value="149">149 (5745 MHz)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="monitor_capture">
+                                        <span class="form-check-label">Enable packet capture</span>
+                                    </label>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Capture Filter</label>
+                                    <input type="text" class="form-control" name="monitor_filter" placeholder="wlan type mgt">
+                                    <small class="form-hint">Tcpdump-style filter expression</small>
+                                </div>
+                            </div>
+
+                            <div class="form-footer">
+                                <button type="submit" class="btn btn-primary">Save Monitor Configuration</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
-            <form id="wifi-connect-form">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Network SSID</label>
-                        <input type="text" class="form-control" name="ssid" readonly>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Security</label>
-                        <input type="text" class="form-control" name="security" readonly>
-                    </div>
-                    <div class="mb-3" id="password-field">
-                        <label class="form-label">Password</label>
-                        <input type="password" class="form-control" name="password" placeholder="Enter network password">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Interface</label>
-                        <select class="form-select" name="interface">
-                            <option value="">Select wireless interface...</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <a href="#" class="btn btn-link link-secondary" data-bs-dismiss="modal">Cancel</a>
-                    <button type="submit" class="btn btn-primary ms-auto">Connect</button>
-                </div>
-            </form>
         </div>
     </div>
 </div>
 
 <script>
-function scanNetworks() {
-    const tbody = document.getElementById('available-networks');
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Scanning for networks...</td></tr>';
+// Handle mode enable/disable toggles
+['ap', 'sta', 'adhoc', 'monitor'].forEach(mode => {
+    const toggle = document.querySelector(`input[name="${mode}_enabled"]`);
+    const settings = document.getElementById(`${mode}Settings`);
     
-    fetch('/api/network/wireless/scan')
-        .then(response => response.json())
-        .then(networks => {
-            tbody.innerHTML = '';
-            if (networks.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No networks found</td></tr>';
-                return;
-            }
-            
-            networks.forEach(network => {
-                const row = tbody.insertRow();
-                row.innerHTML = `
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <div class="me-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon text-${network.signal > -50 ? 'green' : network.signal > -70 ? 'yellow' : 'red'}" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                    <path d="M12 18l.01 0"/>
-                                    <path d="M9.172 15.172a4 4 0 0 1 5.656 0"/>
-                                    <path d="M6.343 12.343a8 8 0 0 1 11.314 0"/>
-                                    <path d="M3.515 9.515c4.686 -4.687 12.284 -4.687 17 0"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <strong>${network.ssid}</strong>
-                                ${network.connected ? '<span class="badge bg-green ms-2">Connected</span>' : ''}
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <span class="badge bg-${network.security === 'Open' ? 'yellow' : 'green'}">${network.security}</span>
-                    </td>
-                    <td>
-                        <div class="progress progress-sm">
-                            <div class="progress-bar" style="width: ${Math.min(100, Math.max(0, (network.signal + 100) * 1.25))}%" role="progressbar"></div>
-                        </div>
-                        <small class="text-muted">${network.signal} dBm</small>
-                    </td>
-                    <td>${network.channel}</td>
-                    <td>
-                        ${network.connected ? 
-                            '<span class="status status-green"><span class="status-dot status-dot-animated"></span>Connected</span>' :
-                            '<span class="status status-gray"><span class="status-dot"></span>Available</span>'
-                        }
-                    </td>
-                    <td>
-                        ${network.connected ? 
-                            `<button class="btn btn-white btn-sm" onclick="disconnectNetwork('${network.ssid}')">Disconnect</button>` :
-                            `<button class="btn btn-primary btn-sm" onclick="connectToNetwork('${network.ssid}', '${network.security}')">Connect</button>`
-                        }
-                    </td>
-                `;
-            });
-        })
-        .catch(error => {
-            console.error('Error scanning networks:', error);
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted text-red">Error scanning networks</td></tr>';
+    if (toggle && settings) {
+        toggle.addEventListener('change', function() {
+            settings.style.display = this.checked ? 'block' : 'none';
         });
-}
-
-function connectToNetwork(ssid, security) {
-    const modal = new bootstrap.Modal(document.getElementById('wifi-connect-modal'));
-    const form = document.getElementById('wifi-connect-form');
-    
-    form.elements['ssid'].value = ssid;
-    form.elements['security'].value = security;
-    
-    // Hide password field for open networks
-    const passwordField = document.getElementById('password-field');
-    if (security === 'Open') {
-        passwordField.classList.add('d-none');
-    } else {
-        passwordField.classList.remove('d-none');
     }
+});
+
+// Handle AP security mode changes
+document.querySelector('select[name="ap_security"]').addEventListener('change', function() {
+    const passwordField = document.getElementById('apPasswordField');
+    passwordField.style.display = this.value === 'none' ? 'none' : 'block';
     
-    // Load available wireless interfaces
-    fetch('/api/network/interfaces?type=wireless')
-        .then(response => response.json())
-        .then(interfaces => {
-            const select = form.elements['interface'];
-            select.innerHTML = '<option value="">Select wireless interface...</option>';
-            interfaces.forEach(iface => {
-                const option = document.createElement('option');
-                option.value = iface.name;
-                option.textContent = iface.name;
-                select.appendChild(option);
-            });
-        });
-    
-    modal.show();
-}
+    const passwordInput = passwordField.querySelector('input');
+    passwordInput.required = this.value !== 'none';
+});
 
-function disconnectNetwork(identifier) {
-    if (confirm(`Are you sure you want to disconnect from ${identifier}?`)) {
-        fetch('/api/network/wireless/disconnect', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ identifier: identifier })
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.error) {
-                alert('Error: ' + result.error);
-            } else {
-                location.reload();
-            }
-        })
-        .catch(error => alert('Error disconnecting: ' + error));
-    }
-}
-
-function addWirelessInterface() {
-    // Implementation for adding new wireless interface
-    alert('Add Wireless Interface - Implementation needed');
-}
-
-function editWirelessInterface(name) {
-    // Implementation for editing wireless interface
-    alert(`Edit Wireless Interface ${name} - Implementation needed`);
-}
-
-function deleteWirelessInterface(name) {
-    if (confirm(`Are you sure you want to delete wireless interface ${name}?`)) {
-        fetch(`/api/network/wireless/interfaces/${name}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.error) {
-                alert('Error: ' + result.error);
-            } else {
-                location.reload();
-            }
-        })
-        .catch(error => alert('Error deleting interface: ' + error));
-    }
-}
-
-// Handle WiFi connection form submission
-document.getElementById('wifi-connect-form').addEventListener('submit', function(e) {
+// Access Point configuration form
+document.getElementById('apConfigForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
-    const data = Object.fromEntries(formData.entries());
+    const data = {};
     
-    fetch('/api/network/wireless/connect', {
+    for (let [key, value] of formData.entries()) {
+        if (key.endsWith('_enabled') || key.endsWith('_hidden') || key.endsWith('_isolation')) {
+            data[key] = this.elements[key].checked;
+        } else {
+            data[key] = value;
+        }
+    }
+    
+    fetch('/network/api/wireless/ap', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify(data)
     })
     .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert('Error: ' + result.error);
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
         } else {
-            bootstrap.Modal.getInstance(document.getElementById('wifi-connect-modal')).hide();
-            location.reload();
+            showAlert('Success', 'Access Point configuration saved successfully', 'success');
         }
     })
-    .catch(error => alert('Error connecting to network: ' + error));
+    .catch(error => {
+        showAlert('Error', 'Failed to save Access Point configuration', 'danger');
+        console.error('Error:', error);
+    });
 });
 
-// Auto-scan on page load
+// Station configuration form
+document.getElementById('staConfigForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {};
+    
+    for (let [key, value] of formData.entries()) {
+        if (key.endsWith('_enabled') || key.endsWith('_auto_connect')) {
+            data[key] = this.elements[key].checked;
+        } else {
+            data[key] = value;
+        }
+    }
+    
+    fetch('/network/api/wireless/sta', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', 'Station configuration saved successfully', 'success');
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to save Station configuration', 'danger');
+        console.error('Error:', error);
+    });
+});
+
+function scanWiFiNetworks() {
+    const tbody = document.getElementById('availableNetworksTable');
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center"><div class="spinner-border spinner-border-sm me-2"></div>Scanning for networks...</td></tr>';
+    
+    fetch('/network/api/wireless/scan', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        tbody.innerHTML = '';
+        
+        if (data.networks && data.networks.length > 0) {
+            data.networks.forEach(network => {
+                const row = document.createElement('tr');
+                
+                // Signal strength badge
+                let signalClass = 'secondary';
+                if (network.signal > -50) signalClass = 'success';
+                else if (network.signal > -70) signalClass = 'warning';
+                else if (network.signal > -85) signalClass = 'danger';
+                
+                row.innerHTML = `
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M12 18h.01"/>
+                                <path d="M9.172 15.172a4 4 0 0 1 5.656 0"/>
+                                <path d="M6.343 12.343a8 8 0 0 1 11.314 0"/>
+                                <path d="M3.515 9.515c4.686 -4.687 12.284 -4.687 17 0"/>
+                            </svg>
+                            <strong>${network.ssid}</strong>
+                        </div>
+                    </td>
+                    <td>
+                        ${network.security ? `<span class="badge bg-warning">${network.security}</span>` : '<span class="badge bg-success">Open</span>'}
+                    </td>
+                    <td>
+                        <span class="badge bg-${signalClass}">${network.signal} dBm</span>
+                    </td>
+                    <td>${network.channel}</td>
+                    <td>${network.frequency} MHz</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="selectNetwork('${network.ssid}', '${network.security}')">Connect</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No networks found</td></tr>';
+        }
+    })
+    .catch(error => {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Scan failed</td></tr>';
+        console.error('Error:', error);
+    });
+}
+
+function selectNetwork(ssid, security) {
+    document.querySelector('input[name="sta_ssid"]').value = ssid;
+    document.querySelector('select[name="sta_security"]').value = security || 'none';
+    
+    // Focus on password field if network is secured
+    if (security && security !== 'none') {
+        document.querySelector('input[name="sta_password"]').focus();
+    }
+    
+    // Switch to Station tab
+    const staTab = document.querySelector('a[href="#tabs-sta"]');
+    if (staTab) {
+        staTab.click();
+    }
+}
+
+function connectToNetwork() {
+    const form = document.getElementById('staConfigForm');
+    const formData = new FormData(form);
+    const data = {};
+    
+    for (let [key, value] of formData.entries()) {
+        if (key.endsWith('_enabled') || key.endsWith('_auto_connect')) {
+            data[key] = form.elements[key].checked;
+        } else {
+            data[key] = value;
+        }
+    }
+    
+    data.connect_now = true;
+    
+    fetch('/network/api/wireless/connect', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', 'Connecting to network...', 'info');
+            
+            // Check connection status after a delay
+            setTimeout(() => {
+                checkConnectionStatus();
+            }, 5000);
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to connect to network', 'danger');
+        console.error('Error:', error);
+    });
+}
+
+function checkConnectionStatus() {
+    fetch('/network/api/wireless/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.sta_connected) {
+                showAlert('Success', `Connected to ${data.sta_ssid}. Signal: ${data.signal_strength}`, 'success');
+                document.getElementById('signalStrength').textContent = data.signal_strength;
+            } else {
+                showAlert('Warning', 'Connection failed or still in progress', 'warning');
+            }
+        })
+        .catch(error => {
+            console.error('Error checking status:', error);
+        });
+}
+
+function loadConnectedClients() {
+    fetch('/network/api/wireless/clients')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('connectedClientsTable');
+            tbody.innerHTML = '';
+            
+            document.getElementById('wirelessClients').textContent = data.clients ? data.clients.length : 0;
+            
+            if (data.clients && data.clients.length > 0) {
+                data.clients.forEach(client => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${client.hostname || 'Unknown Device'}</td>
+                        <td><code>${client.mac}</code></td>
+                        <td>${client.ip || '-'}</td>
+                        <td><span class="badge bg-info">${client.signal} dBm</span></td>
+                        <td>${client.connected_time || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger" onclick="disconnectClient('${client.mac}')">Disconnect</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No connected clients</td></tr>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading clients:', error);
+        });
+}
+
+function disconnectClient(mac) {
+    if (!confirm('Are you sure you want to disconnect this client?')) {
+        return;
+    }
+    
+    fetch('/network/api/wireless/disconnect', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ mac: mac })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', 'Client disconnected', 'success');
+            loadConnectedClients();
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to disconnect client', 'danger');
+        console.error('Error:', error);
+    });
+}
+
+// Load initial data
 document.addEventListener('DOMContentLoaded', function() {
-    scanNetworks();
+    loadConnectedClients();
+    
+    // Set up periodic refresh
+    setInterval(loadConnectedClients, 10000); // Refresh every 10 seconds
 });
 </script>
 {{end}}
-{{template "base/layout.html" .}}
+
+{{template "layout.html" .}}

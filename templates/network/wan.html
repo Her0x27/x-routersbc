@@ -1,5 +1,4 @@
 {{define "content"}}
-<!-- Page header -->
 <div class="page-header d-print-none">
     <div class="container-xl">
         <div class="row g-2 align-items-center">
@@ -10,163 +9,222 @@
                         <li class="breadcrumb-item active" aria-current="page">WAN</li>
                     </ol>
                 </nav>
-                <h2 class="page-title">
-                    WAN Configuration
-                </h2>
+                <h2 class="page-title">WAN Configuration</h2>
+                <div class="text-muted mt-1">Configure internet connection and multi-WAN settings</div>
+            </div>
+            <div class="col-auto ms-auto d-print-none">
+                <div class="btn-list">
+                    <a href="#" class="btn btn-outline-secondary" onclick="testWANConnection()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M12 1v6m0 6v6"/>
+                            <path d="M21 12h-6m-6 0H3"/>
+                        </svg>
+                        Test Connection
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
-<!-- Page body -->
+
 <div class="page-body">
     <div class="container-xl">
-        <!-- Tabs -->
+        <!-- WAN Status Card -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Current WAN Status</h3>
+                        <div class="card-actions">
+                            <span class="status-indicator status-green" id="wanStatusIndicator"></span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-3">
+                                <div class="text-muted">Connection Status</div>
+                                <div class="h3" id="connectionStatus">Checking...</div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="text-muted">IP Address</div>
+                                <div class="h3" id="wanIPAddress">-</div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="text-muted">Gateway</div>
+                                <div class="h3" id="wanGateway">-</div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="text-muted">Interface</div>
+                                <div class="h3" id="wanInterface">-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WAN Configuration Tabs -->
         <div class="card">
             <div class="card-header">
-                <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <a href="#tabs-general-wan" class="nav-link active" data-bs-toggle="tab" aria-selected="true" role="tab">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <circle cx="12" cy="12" r="9"/>
-                                <line x1="12" y1="8" x2="12" y2="16"/>
-                                <line x1="8" y1="12" x2="16" y2="12"/>
-                            </svg>
-                            General WAN
-                        </a>
+                <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs">
+                    <li class="nav-item">
+                        <a href="#tabs-general-wan" class="nav-link active" data-bs-toggle="tab">General WAN</a>
                     </li>
-                    <li class="nav-item" role="presentation">
-                        <a href="#tabs-multi-wan" class="nav-link" data-bs-toggle="tab" aria-selected="false" role="tab" tabindex="-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M9 12l-4 -4l4 -4"/>
-                                <path d="M15 12l4 -4l-4 -4"/>
-                                <path d="M12 3v18"/>
-                            </svg>
-                            Multi WAN
-                        </a>
+                    <li class="nav-item">
+                        <a href="#tabs-multi-wan" class="nav-link" data-bs-toggle="tab">Multi WAN</a>
                     </li>
-                    <li class="nav-item" role="presentation">
-                        <a href="#tabs-wan-settings" class="nav-link" data-bs-toggle="tab" aria-selected="false" role="tab" tabindex="-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"/>
-                                <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/>
-                            </svg>
-                            WAN Settings
-                        </a>
+                    <li class="nav-item">
+                        <a href="#tabs-wan-settings" class="nav-link" data-bs-toggle="tab">WAN Settings</a>
                     </li>
                 </ul>
             </div>
             <div class="card-body">
                 <div class="tab-content">
                     <!-- General WAN Tab -->
-                    <div class="tab-pane active show" id="tabs-general-wan" role="tabpanel">
-                        <form id="wan-general-form">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">WAN Type</label>
-                                    <select class="form-select" name="type" id="wan-type">
-                                        <option value="wire" {{if eq .config.Type "wire"}}selected{{end}}>Wire (Ethernet)</option>
-                                        <option value="wireless" {{if eq .config.Type "wireless"}}selected{{end}}>Wireless</option>
-                                    </select>
+                    <div class="tab-pane active show" id="tabs-general-wan">
+                        <form id="wanConfigForm">
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">WAN Interface</label>
+                                        <select class="form-select" name="wan_interface" required>
+                                            <option value="">Select interface...</option>
+                                            {{if .WANConfig}}
+                                            <option value="{{.WANConfig.Interface}}" selected>{{.WANConfig.Interface}}</option>
+                                            {{end}}
+                                        </select>
+                                        <small class="form-hint">Choose the interface connected to your internet provider</small>
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">WAN Interface</label>
-                                    <select class="form-select" name="interface" id="wan-interface">
-                                        <option value="">Select interface...</option>
-                                        <!-- Populated dynamically -->
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-12">
-                                    <label class="form-label">Connection Type</label>
-                                    <div class="form-selectgroup form-selectgroup-boxes d-flex flex-column">
-                                        <label class="form-selectgroup-item flex-fill">
-                                            <input type="radio" name="connection_type" value="dhcp" class="form-selectgroup-input" {{if .config.DHCP}}checked{{end}}>
-                                            <div class="form-selectgroup-label d-flex align-items-center p-3">
-                                                <div class="me-3">
-                                                    <span class="form-selectgroup-check"></span>
-                                                </div>
-                                                <div>
-                                                    <strong>DHCP (Automatic)</strong>
-                                                    <div class="text-muted">Obtain IP address automatically from ISP</div>
-                                                </div>
-                                            </div>
-                                        </label>
-                                        <label class="form-selectgroup-item flex-fill">
-                                            <input type="radio" name="connection_type" value="static" class="form-selectgroup-input" {{if not .config.DHCP}}checked{{end}}>
-                                            <div class="form-selectgroup-label d-flex align-items-center p-3">
-                                                <div class="me-3">
-                                                    <span class="form-selectgroup-check"></span>
-                                                </div>
-                                                <div>
-                                                    <strong>Static IP</strong>
-                                                    <div class="text-muted">Configure IP address manually</div>
-                                                </div>
-                                            </div>
-                                        </label>
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Connection Type</label>
+                                        <select class="form-select" name="connection_type" required>
+                                            <option value="">Select type...</option>
+                                            <option value="dhcp" {{if eq .WANConfig.Type "dhcp"}}selected{{end}}>DHCP (Automatic)</option>
+                                            <option value="static" {{if eq .WANConfig.Type "static"}}selected{{end}}>Static IP</option>
+                                            <option value="pppoe" {{if eq .WANConfig.Type "pppoe"}}selected{{end}}>PPPoE</option>
+                                            <option value="pptp" {{if eq .WANConfig.Type "pptp"}}selected{{end}}>PPTP</option>
+                                            <option value="l2tp" {{if eq .WANConfig.Type "l2tp"}}selected{{end}}>L2TP</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div id="static-config" class="{{if .config.DHCP}}d-none{{end}}">
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">IP Address</label>
-                                        <input type="text" class="form-control" name="ip_address" value="{{.config.IPAddress}}" placeholder="192.168.1.100">
+
+                            <!-- Connection Type Specific Configuration -->
+                            <div id="dhcpConfig" class="connection-config">
+                                <div class="alert alert-info">
+                                    <h4>DHCP Configuration</h4>
+                                    <p>The router will automatically obtain IP settings from your ISP.</p>
+                                </div>
+                            </div>
+
+                            <div id="staticConfig" class="connection-config" style="display: none;">
+                                <h4>Static IP Configuration</h4>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">IP Address</label>
+                                            <input type="text" class="form-control" name="static_ip" placeholder="192.168.1.100">
+                                        </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Subnet Mask</label>
-                                        <input type="text" class="form-control" name="netmask" value="{{.config.Netmask}}" placeholder="255.255.255.0">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Subnet Mask</label>
+                                            <input type="text" class="form-control" name="static_netmask" placeholder="255.255.255.0">
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Gateway</label>
-                                        <input type="text" class="form-control" name="gateway" value="{{.config.Gateway}}" placeholder="192.168.1.1">
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Gateway</label>
+                                            <input type="text" class="form-control" name="static_gateway" placeholder="192.168.1.1">
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">DNS Servers</label>
+                                            <input type="text" class="form-control" name="static_dns" placeholder="8.8.8.8, 8.8.4.4">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Primary DNS</label>
-                                    <input type="text" class="form-control" name="dns1" value="{{.config.DNS1}}" placeholder="8.8.8.8">
+
+                            <div id="pppoeConfig" class="connection-config" style="display: none;">
+                                <h4>PPPoE Configuration</h4>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Username</label>
+                                            <input type="text" class="form-control" name="pppoe_username" autocomplete="username">
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Password</label>
+                                            <input type="password" class="form-control" name="pppoe_password" autocomplete="current-password">
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Secondary DNS</label>
-                                    <input type="text" class="form-control" name="dns2" value="{{.config.DNS2}}" placeholder="8.8.4.4">
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Service Name (Optional)</label>
+                                            <input type="text" class="form-control" name="pppoe_service">
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">MTU Size</label>
+                                            <input type="number" class="form-control" name="pppoe_mtu" value="1492" min="576" max="1500">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            
+
                             <div class="form-footer">
                                 <button type="submit" class="btn btn-primary">Save WAN Configuration</button>
+                                <button type="button" class="btn btn-outline-secondary ms-2" onclick="resetWANConfig()">Reset</button>
                             </div>
                         </form>
                     </div>
-                    
+
                     <!-- Multi WAN Tab -->
-                    <div class="tab-pane" id="tabs-multi-wan" role="tabpanel">
-                        <div class="alert alert-info">
-                            <h4 class="alert-title">Multi WAN Load Balancing</h4>
-                            <div class="text-muted">Configure multiple WAN connections for load balancing and failover.</div>
+                    <div class="tab-pane" id="tabs-multi-wan">
+                        <div class="mb-3">
+                            <label class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="multi_wan_enabled">
+                                <span class="form-check-label">Enable Multi-WAN</span>
+                            </label>
                         </div>
-                        
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="form-group mb-3">
-                                    <label class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" id="multi-wan-enable">
-                                        <span class="form-check-label">Enable Multi WAN</span>
-                                    </label>
+
+                        <div id="multiWanConfig" style="display: none;">
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Load Balancing Method</label>
+                                        <select class="form-select" name="balancing_method">
+                                            <option value="failover">Failover (Primary/Backup)</option>
+                                            <option value="load_balance">Load Balancing</option>
+                                            <option value="bandwidth">Bandwidth Aggregation</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Health Check Interval</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="health_check_interval" value="30" min="5" max="300">
+                                            <span class="input-group-text">seconds</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        
-                        <div id="multi-wan-config" class="d-none">
+
+                            <h4>WAN Interfaces</h4>
                             <div class="table-responsive">
                                 <table class="table table-vcenter">
                                     <thead>
@@ -174,78 +232,110 @@
                                             <th>Interface</th>
                                             <th>Priority</th>
                                             <th>Weight</th>
+                                            <th>Health Check</th>
                                             <th>Status</th>
-                                            <th>Actions</th>
+                                            <th class="w-1"></th>
                                         </tr>
                                     </thead>
-                                    <tbody id="multi-wan-interfaces">
+                                    <tbody>
                                         <tr>
-                                            <td colspan="5" class="text-center text-muted">No WAN interfaces configured for load balancing</td>
+                                            <td>eth0</td>
+                                            <td>
+                                                <select class="form-select form-select-sm">
+                                                    <option value="1">Primary</option>
+                                                    <option value="2">Secondary</option>
+                                                    <option value="3">Tertiary</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm" value="50" min="1" max="100">
+                                            </td>
+                                            <td>
+                                                <label class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" checked>
+                                                </label>
+                                            </td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                            <td>
+                                                <a href="#" class="btn btn-sm btn-outline-danger">Remove</a>
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
-                            
-                            <div class="form-footer">
-                                <button type="button" class="btn btn-outline-primary" onclick="addMultiWanInterface()">
-                                    Add WAN Interface
-                                </button>
-                                <button type="button" class="btn btn-primary">Save Multi WAN Settings</button>
-                            </div>
+
+                            <button type="button" class="btn btn-outline-primary" onclick="addWANInterface()">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                                Add WAN Interface
+                            </button>
                         </div>
                     </div>
-                    
+
                     <!-- WAN Settings Tab -->
-                    <div class="tab-pane" id="tabs-wan-settings" role="tabpanel">
-                        <form id="wan-settings-form">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Connection Timeout</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control" name="connection_timeout" value="30" placeholder="30">
-                                        <span class="input-group-text">seconds</span>
+                    <div class="tab-pane" id="tabs-wan-settings">
+                        <form id="wanSettingsForm">
+                            <h4>Advanced Settings</h4>
+                            
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">MTU Size</label>
+                                        <input type="number" class="form-control" name="mtu_size" value="1500" min="576" max="9000">
+                                        <small class="form-hint">Maximum Transmission Unit size in bytes</small>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Retry Attempts</label>
-                                    <input type="number" class="form-control" name="retry_attempts" value="3" placeholder="3">
-                                </div>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Health Check Interval</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control" name="health_check_interval" value="60" placeholder="60">
-                                        <span class="input-group-text">seconds</span>
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Connection Timeout</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="connection_timeout" value="30" min="5" max="300">
+                                            <span class="input-group-text">seconds</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Health Check Host</label>
-                                    <input type="text" class="form-control" name="health_check_host" value="8.8.8.8" placeholder="8.8.8.8">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="wan_ping_check" checked>
+                                    <span class="form-check-label">Enable WAN connectivity monitoring</span>
+                                </label>
+                                <small class="form-hint">Periodically ping external servers to check connectivity</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Ping Targets</label>
+                                <textarea class="form-control" name="ping_targets" rows="3" placeholder="8.8.8.8&#10;8.8.4.4&#10;1.1.1.1">8.8.8.8
+8.8.4.4
+1.1.1.1</textarea>
+                                <small class="form-hint">One IP address per line</small>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="auto_dns" checked>
+                                            <span class="form-check-label">Automatically obtain DNS servers</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="nat_enabled" checked>
+                                            <span class="form-check-label">Enable NAT (Network Address Translation)</span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-12">
-                                    <label class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="auto_failover" checked>
-                                        <span class="form-check-label">Enable automatic failover</span>
-                                    </label>
-                                </div>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-12">
-                                    <label class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="wan_monitoring">
-                                        <span class="form-check-label">Enable WAN connection monitoring</span>
-                                    </label>
-                                </div>
-                            </div>
-                            
+
                             <div class="form-footer">
-                                <button type="submit" class="btn btn-primary">Save WAN Settings</button>
+                                <button type="submit" class="btn btn-primary">Save Settings</button>
                             </div>
                         </form>
                     </div>
@@ -256,102 +346,188 @@
 </div>
 
 <script>
-// Handle connection type toggle
-document.querySelectorAll('input[name="connection_type"]').forEach(radio => {
-    radio.addEventListener('change', function() {
-        const staticConfig = document.getElementById('static-config');
-        if (this.value === 'static') {
-            staticConfig.classList.remove('d-none');
-        } else {
-            staticConfig.classList.add('d-none');
-        }
-    });
-});
+// Load available interfaces for WAN
+function loadWANInterfaces() {
+    fetch('/network/api/interfaces')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.querySelector('select[name="wan_interface"]');
+            
+            // Clear existing options except the first one
+            while (select.children.length > 1) {
+                select.removeChild(select.lastChild);
+            }
+            
+            // Add available interfaces
+            data.forEach(interface => {
+                if (interface.type === 'ethernet' || interface.type === 'wifi') {
+                    const option = document.createElement('option');
+                    option.value = interface.name;
+                    option.textContent = `${interface.name} (${interface.type})`;
+                    select.appendChild(option);
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error loading interfaces:', error);
+        });
+}
 
-// Handle Multi WAN toggle
-document.getElementById('multi-wan-enable').addEventListener('change', function() {
-    const config = document.getElementById('multi-wan-config');
-    if (this.checked) {
-        config.classList.remove('d-none');
-    } else {
-        config.classList.add('d-none');
+// Handle connection type change
+document.querySelector('select[name="connection_type"]').addEventListener('change', function() {
+    const configs = document.querySelectorAll('.connection-config');
+    configs.forEach(config => {
+        config.style.display = 'none';
+    });
+    
+    const selectedType = this.value;
+    if (selectedType) {
+        const targetConfig = document.getElementById(selectedType + 'Config');
+        if (targetConfig) {
+            targetConfig.style.display = 'block';
+        }
     }
 });
 
-// Load available interfaces for WAN
-document.addEventListener('DOMContentLoaded', function() {
-    loadWanInterfaces();
+// Handle multi-WAN enable/disable
+document.querySelector('input[name="multi_wan_enabled"]').addEventListener('change', function() {
+    const multiWanConfig = document.getElementById('multiWanConfig');
+    multiWanConfig.style.display = this.checked ? 'block' : 'none';
 });
 
-function loadWanInterfaces() {
-    fetch('/api/network/interfaces')
+// WAN configuration form submission
+document.getElementById('wanConfigForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {};
+    
+    for (let [key, value] of formData.entries()) {
+        data[key] = value;
+    }
+    
+    fetch('/network/api/wan/config', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', 'WAN configuration saved successfully', 'success');
+            updateWANStatus();
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to save WAN configuration', 'danger');
+        console.error('Error:', error);
+    });
+});
+
+// WAN settings form submission
+document.getElementById('wanSettingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {};
+    
+    for (let [key, value] of formData.entries()) {
+        if (this.elements[key].type === 'checkbox') {
+            data[key] = this.elements[key].checked;
+        } else {
+            data[key] = value;
+        }
+    }
+    
+    fetch('/network/api/wan/settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', 'WAN settings saved successfully', 'success');
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to save WAN settings', 'danger');
+        console.error('Error:', error);
+    });
+});
+
+function testWANConnection() {
+    showAlert('Info', 'Testing WAN connection...', 'info');
+    
+    fetch('/network/api/wan/test', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Success', `WAN connection test successful. Latency: ${data.latency}ms`, 'success');
+        } else {
+            showAlert('Error', `WAN connection test failed: ${data.error}`, 'danger');
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to test WAN connection', 'danger');
+        console.error('Error:', error);
+    });
+}
+
+function resetWANConfig() {
+    if (confirm('Are you sure you want to reset WAN configuration to defaults?')) {
+        document.getElementById('wanConfigForm').reset();
+    }
+}
+
+function addWANInterface() {
+    // This would open a modal to select additional WAN interfaces
+    showAlert('Info', 'Multi-WAN interface addition feature coming soon', 'info');
+}
+
+function updateWANStatus() {
+    fetch('/network/api/wan/status')
         .then(response => response.json())
-        .then(interfaces => {
-            const select = document.getElementById('wan-interface');
-            select.innerHTML = '<option value="">Select interface...</option>';
+        .then(data => {
+            document.getElementById('connectionStatus').textContent = data.connected ? 'Connected' : 'Disconnected';
+            document.getElementById('wanIPAddress').textContent = data.ip || '-';
+            document.getElementById('wanGateway').textContent = data.gateway || '-';
+            document.getElementById('wanInterface').textContent = data.interface || '-';
             
-            interfaces.filter(iface => iface.type === 'ethernet' || iface.type === 'wireless').forEach(iface => {
-                const option = document.createElement('option');
-                option.value = iface.name;
-                option.textContent = `${iface.name} (${iface.type})`;
-                select.appendChild(option);
-            });
+            const statusIndicator = document.getElementById('wanStatusIndicator');
+            if (data.connected) {
+                statusIndicator.className = 'status-indicator status-green';
+            } else {
+                statusIndicator.className = 'status-indicator status-red';
+            }
         })
-        .catch(error => console.error('Error loading interfaces:', error));
+        .catch(error => {
+            console.error('Error updating WAN status:', error);
+        });
 }
 
-function addMultiWanInterface() {
-    // Implementation for adding multi-WAN interface
-    alert('Add Multi WAN Interface - Implementation needed');
-}
-
-// Handle form submissions
-document.getElementById('wan-general-form').addEventListener('submit', function(e) {
-    e.preventDefault();
+// Load initial data
+document.addEventListener('DOMContentLoaded', function() {
+    loadWANInterfaces();
+    updateWANStatus();
     
-    const formData = new FormData(this);
-    const data = Object.fromEntries(formData.entries());
-    data.dhcp = data.connection_type === 'dhcp';
-    
-    // Save WAN configuration
-    fetch('/api/network/wan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert('Error: ' + result.error);
-        } else {
-            alert('WAN configuration saved successfully');
-        }
-    })
-    .catch(error => alert('Error saving WAN configuration: ' + error));
-});
-
-document.getElementById('wan-settings-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const data = Object.fromEntries(formData.entries());
-    
-    // Save WAN settings
-    fetch('/api/network/wan/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert('Error: ' + result.error);
-        } else {
-            alert('WAN settings saved successfully');
-        }
-    })
-    .catch(error => alert('Error saving WAN settings: ' + error));
+    // Set initial connection type display
+    const connectionType = document.querySelector('select[name="connection_type"]').value;
+    if (connectionType) {
+        document.querySelector('select[name="connection_type"]').dispatchEvent(new Event('change'));
+    }
 });
 </script>
 {{end}}
-{{template "base/layout.html" .}}
+
+{{template "layout.html" .}}
