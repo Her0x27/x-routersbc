@@ -1,0 +1,165 @@
+{{define "content"}}
+<!-- Page header -->
+<div class="page-header d-print-none">
+    <div class="container-xl">
+        <div class="row g-2 align-items-center">
+            <div class="col">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/network">Network</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Firewall</li>
+                    </ol>
+                </nav>
+                <h2 class="page-title">
+                    Firewall Configuration
+                </h2>
+            </div>
+            <div class="col-auto ms-auto d-print-none">
+                <div class="btn-list">
+                    <button type="button" class="btn btn-outline-secondary" onclick="flushRules()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/>
+                            <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>
+                        </svg>
+                        Flush Rules
+                    </button>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#firewall-rule-modal">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Add Rule
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Page body -->
+<div class="page-body">
+    <div class="container-xl">
+        <!-- Backend Selection -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h3 class="card-title">Firewall Settings</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Firewall Backend</label>
+                        <select class="form-select" id="firewall-backend" onchange="switchFirewallBackend()">
+                            <option value="iptables" {{if eq .config.Backend "iptables"}}selected{{end}}>IPTables (Classic)</option>
+                            <option value="nftables" {{if eq .config.Backend "nftables"}}selected{{end}}>NFTables (Modern)</option>
+                        </select>
+                        <small class="form-hint">Select the firewall backend to use. NFTables is the modern replacement for IPTables.</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Current Status</label>
+                        <div class="d-flex align-items-center">
+                            <span class="status status-green me-2">
+                                <span class="status-dot status-dot-animated"></span>
+                                Active
+                            </span>
+                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="reloadFirewall()">Reload</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dynamic content based on backend -->
+        <div id="firewall-content">
+            {{if eq .config.Backend "nftables"}}
+                {{template "network/firewall_new.html" .}}
+            {{else}}
+                {{template "network/firewall_classic.html" .}}
+            {{end}}
+        </div>
+    </div>
+</div>
+
+<script>
+function switchFirewallBackend() {
+    const backend = document.getElementById('firewall-backend').value;
+    
+    if (confirm(`Are you sure you want to switch to ${backend}? This will reload the firewall configuration.`)) {
+        fetch('/api/network/firewall/backend', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ backend: backend })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert('Error: ' + result.error);
+            } else {
+                location.reload();
+            }
+        })
+        .catch(error => alert('Error switching backend: ' + error));
+    }
+}
+
+function flushRules() {
+    if (confirm('Are you sure you want to flush all firewall rules? This will remove ALL rules and may affect connectivity.')) {
+        fetch('/api/network/firewall/flush', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert('Error: ' + result.error);
+            } else {
+                alert('Firewall rules flushed successfully');
+                location.reload();
+            }
+        })
+        .catch(error => alert('Error flushing rules: ' + error));
+    }
+}
+
+function reloadFirewall() {
+    fetch('/api/network/firewall/reload', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
+            alert('Error: ' + result.error);
+        } else {
+            alert('Firewall reloaded successfully');
+            location.reload();
+        }
+    })
+    .catch(error => alert('Error reloading firewall: ' + error));
+}
+
+// Handle firewall rule form submission
+document.getElementById('firewall-rule-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    data.enabled = formData.get('enabled') === 'on';
+    
+    fetch('/api/network/firewall/rules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
+            alert('Error: ' + result.error);
+        } else {
+            bootstrap.Modal.getInstance(document.getElementById('firewall-rule-modal')).hide();
+            location.reload();
+        }
+    })
+    .catch(error => alert('Error saving firewall rule: ' + error));
+});
+</script>
+{{end}}
+{{template "base/layout.html" .}}

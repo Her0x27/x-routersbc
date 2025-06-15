@@ -1,0 +1,412 @@
+{{define "content"}}
+<!-- Page header -->
+<div class="page-header d-print-none">
+    <div class="container-xl">
+        <div class="row g-2 align-items-center">
+            <div class="col">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/system">System</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">About Device</li>
+                    </ol>
+                </nav>
+                <h2 class="page-title">
+                    About Device
+                </h2>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Page body -->
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-deck row-cards">
+            <!-- CPU Information -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <rect x="4" y="4" width="6" height="6" rx="1"/>
+                                <rect x="14" y="4" width="6" height="6" rx="1"/>
+                                <rect x="4" y="14" width="6" height="6" rx="1"/>
+                                <rect x="14" y="14" width="6" height="6" rx="1"/>
+                            </svg>
+                            Processor
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        {{if .deviceInfo.CPU}}
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-2">
+                                    <div class="text-muted">Model</div>
+                                    <div class="fw-bold">{{.deviceInfo.CPU.Model}}</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-2">
+                                    <div class="text-muted">Cores</div>
+                                    <div>{{.deviceInfo.CPU.Cores}}</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-2">
+                                    <div class="text-muted">Architecture</div>
+                                    <div>{{.deviceInfo.CPU.Arch}}</div>
+                                </div>
+                            </div>
+                        </div>
+                        {{else}}
+                        <div class="text-center text-muted">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <circle cx="12" cy="12" r="2"/>
+                                <path d="m22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7"/>
+                                <path d="M8 21l8 0"/>
+                                <path d="M12 17l0 4"/>
+                            </svg>
+                            <p>CPU information not available</p>
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Memory Information -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M3 5a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-14z"/>
+                                <path d="M12 9v6"/>
+                                <path d="M9 12h6"/>
+                            </svg>
+                            Memory
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        {{if .deviceInfo.Memory}}
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="mb-2">
+                                    <div class="text-muted">Total</div>
+                                    <div class="fw-bold">{{printf "%.1f GB" (div (toFloat64 .deviceInfo.Memory.Total) 1073741824)}}</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="mb-2">
+                                    <div class="text-muted">Available</div>
+                                    <div>{{printf "%.1f GB" (div (toFloat64 .deviceInfo.Memory.Available) 1073741824)}}</div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="text-muted">Usage</div>
+                                        <div>{{printf "%.1f%%" (mul (div (toFloat64 .deviceInfo.Memory.Used) (toFloat64 .deviceInfo.Memory.Total)) 100)}}</div>
+                                    </div>
+                                    <div class="progress">
+                                        <div class="progress-bar" style="width: {{printf "%.1f%%" (mul (div (toFloat64 .deviceInfo.Memory.Used) (toFloat64 .deviceInfo.Memory.Total)) 100)}}" role="progressbar"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {{else}}
+                        <div class="text-center text-muted">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <circle cx="12" cy="12" r="2"/>
+                                <path d="m22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7"/>
+                                <path d="M8 21l8 0"/>
+                                <path d="M12 17l0 4"/>
+                            </svg>
+                            <p>Memory information not available</p>
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Storage Information -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <rect x="4" y="6" width="16" height="12" rx="2"/>
+                                <circle cx="9" cy="12" r="1"/>
+                                <circle cx="15" cy="12" r="1"/>
+                            </svg>
+                            Storage
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        {{if .deviceInfo.Storage.Devices}}
+                        <div class="table-responsive">
+                            <table class="table table-vcenter">
+                                <thead>
+                                    <tr>
+                                        <th>Device</th>
+                                        <th>Type</th>
+                                        <th>Size</th>
+                                        <th>Used</th>
+                                        <th>Available</th>
+                                        <th>Mount Point</th>
+                                        <th>Usage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {{range .deviceInfo.Storage.Devices}}
+                                    <tr>
+                                        <td>{{.Name}}</td>
+                                        <td>
+                                            <span class="badge bg-{{if eq .Type "ssd"}}blue{{else if eq .Type "emmc"}}green{{else if eq .Type "sdcard"}}yellow{{else}}secondary{{end}}">
+                                                {{.Type}}
+                                            </span>
+                                        </td>
+                                        <td>{{printf "%.1f GB" (div (toFloat64 .Size) 1073741824)}}</td>
+                                        <td>{{printf "%.1f GB" (div (toFloat64 .Used) 1073741824)}}</td>
+                                        <td>{{printf "%.1f GB" (div (toFloat64 .Available) 1073741824)}}</td>
+                                        <td>{{.MountPoint}}</td>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar" style="width: {{if gt .Size 0}}{{printf "%.1f%%" (mul (div (toFloat64 .Used) (toFloat64 .Size)) 100)}}{{else}}0%{{end}}" role="progressbar"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {{end}}
+                                </tbody>
+                            </table>
+                        </div>
+                        {{else}}
+                        <div class="text-center text-muted">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <circle cx="12" cy="12" r="2"/>
+                                <path d="m22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7"/>
+                                <path d="M8 21l8 0"/>
+                                <path d="M12 17l0 4"/>
+                            </svg>
+                            <p>Storage information not available</p>
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Network Hardware -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M6 9a6 6 0 1 0 12 0a6 6 0 0 0 -12 0"/>
+                                <path d="M12 3c1.333 .333 2 2.333 2 6s-.667 5.667 -2 6"/>
+                                <path d="M12 3c-1.333 .333 -2 2.333 -2 6s.667 5.667 2 6"/>
+                                <path d="M6 9h12"/>
+                                <path d="M3 20h7l-1 -1"/>
+                                <path d="M21 20h-7l1 -1"/>
+                            </svg>
+                            Network
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        {{if .deviceInfo.Network}}
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <div class="text-muted mb-2">Ethernet Interfaces</div>
+                                    {{if .deviceInfo.Network.Ethernet}}
+                                        {{range .deviceInfo.Network.Ethernet}}
+                                        <div class="badge bg-blue me-1 mb-1">{{.}}</div>
+                                        {{end}}
+                                    {{else}}
+                                    <div class="text-muted">None detected</div>
+                                    {{end}}
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <div class="text-muted mb-2">WiFi Interfaces</div>
+                                    {{if .deviceInfo.Network.WiFi}}
+                                        {{range .deviceInfo.Network.WiFi}}
+                                        <div class="badge bg-green me-1 mb-1">{{.}}</div>
+                                        {{end}}
+                                    {{else}}
+                                    <div class="text-muted">None detected</div>
+                                    {{end}}
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <div class="text-muted mb-2">Bluetooth</div>
+                                    {{if .deviceInfo.Network.Bluetooth}}
+                                        {{range .deviceInfo.Network.Bluetooth}}
+                                        <div class="badge bg-purple me-1 mb-1">{{.}}</div>
+                                        {{end}}
+                                    {{else}}
+                                    <div class="text-muted">None detected</div>
+                                    {{end}}
+                                </div>
+                            </div>
+                        </div>
+                        {{else}}
+                        <div class="text-center text-muted">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <circle cx="12" cy="12" r="2"/>
+                                <path d="m22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7"/>
+                                <path d="M8 21l8 0"/>
+                                <path d="M12 17l0 4"/>
+                            </svg>
+                            <p>Network hardware information not available</p>
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Video & Audio -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M15 10l4.553 -2.276a1 1 0 0 1 1.447 .894v6.764a1 1 0 0 1 -1.447 .894l-4.553 -2.276v-4z"/>
+                                <rect x="3" y="6" width="12" height="12" rx="2"/>
+                            </svg>
+                            Video & Audio
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- Video Devices -->
+                        <div class="mb-3">
+                            <div class="text-muted mb-2">Video Devices</div>
+                            {{if .deviceInfo.Video.Devices}}
+                                {{range .deviceInfo.Video.Devices}}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <div class="fw-bold">{{.Name}}</div>
+                                        <div class="text-muted small">{{.Description}}</div>
+                                    </div>
+                                    <div class="badge bg-blue">{{.Driver}}</div>
+                                </div>
+                                {{end}}
+                            {{else}}
+                            <div class="text-muted">No video devices detected</div>
+                            {{end}}
+                        </div>
+                        
+                        <!-- Audio Devices -->
+                        <div class="mb-3">
+                            <div class="text-muted mb-2">Audio Devices</div>
+                            {{if .deviceInfo.Audio.Devices}}
+                                {{range .deviceInfo.Audio.Devices}}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <div class="fw-bold">{{.Name}}</div>
+                                        <div class="text-muted small">{{.Description}}</div>
+                                    </div>
+                                    <div class="badge bg-green">{{.Driver}}</div>
+                                </div>
+                                {{end}}
+                            {{else}}
+                            <div class="text-muted">No audio devices detected</div>
+                            {{end}}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- External I/O -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <rect x="2" y="3" width="20" height="14" rx="2"/>
+                                <line x1="8" y1="21" x2="16" y2="21"/>
+                                <line x1="12" y1="17" x2="12" y2="21"/>
+                            </svg>
+                            External I/O
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        {{if .deviceInfo.IO}}
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <div class="text-muted mb-2">USB Ports</div>
+                                    <div class="h3 mb-0">{{.deviceInfo.IO.USBPorts}}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <div class="text-muted mb-2">GPIO Pins</div>
+                                    <div class="h3 mb-0">{{len .deviceInfo.IO.GPIO}}</div>
+                                    {{if .deviceInfo.IO.GPIO}}
+                                    <div class="text-muted small">
+                                        {{range $index, $gpio := .deviceInfo.IO.GPIO}}
+                                            {{if lt $index 3}}{{$gpio}} {{end}}
+                                        {{end}}
+                                        {{if gt (len .deviceInfo.IO.GPIO) 3}}...{{end}}
+                                    </div>
+                                    {{end}}
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <div class="text-muted mb-2">SPI</div>
+                                    <div class="h3 mb-0">{{len .deviceInfo.IO.SPI}}</div>
+                                    {{if .deviceInfo.IO.SPI}}
+                                    <div class="text-muted small">{{index .deviceInfo.IO.SPI 0}}</div>
+                                    {{end}}
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <div class="text-muted mb-2">UART</div>
+                                    <div class="h3 mb-0">{{len .deviceInfo.IO.UART}}</div>
+                                    {{if .deviceInfo.IO.UART}}
+                                    <div class="text-muted small">{{index .deviceInfo.IO.UART 0}}</div>
+                                    {{end}}
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <div class="text-muted mb-2">I2C</div>
+                                    <div class="h3 mb-0">{{len .deviceInfo.IO.I2C}}</div>
+                                    {{if .deviceInfo.IO.I2C}}
+                                    <div class="text-muted small">{{index .deviceInfo.IO.I2C 0}}</div>
+                                    {{end}}
+                                </div>
+                            </div>
+                        </div>
+                        {{else}}
+                        <div class="text-center text-muted">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-lg" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <circle cx="12" cy="12" r="2"/>
+                                <path d="m22 12c-2.667 4.667 -6 7 -10 7s-7.333 -2.333 -10 -7c2.667 -4.667 6 -7 10 -7s7.333 2.333 10 7"/>
+                                <path d="M8 21l8 0"/>
+                                <path d="M12 17l0 4"/>
+                            </svg>
+                            <p>I/O information not available</p>
+                        </div>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
+{{template "base/layout.html" .}}

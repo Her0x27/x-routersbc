@@ -1,0 +1,330 @@
+<!-- NFTables Configuration -->
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">NFTables Configuration</h3>
+        <div class="card-actions">
+            <div class="dropdown">
+                <a href="#" class="btn-action dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <circle cx="12" cy="12" r="1"/>
+                        <circle cx="12" cy="19" r="1"/>
+                        <circle cx="12" cy="5" r="1"/>
+                    </svg>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end">
+                    <a class="dropdown-item" href="#" onclick="exportNFTables()">Export Rules</a>
+                    <a class="dropdown-item" href="#" onclick="importNFTables()">Import Rules</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#" onclick="resetToDefaults()">Reset to Defaults</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Tables and Chains -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h4>Tables</h4>
+                <div class="list-group">
+                    <div class="list-group-item d-flex align-items-center">
+                        <div class="flex-1">
+                            <strong>inet filter</strong>
+                            <div class="text-muted">Main filtering table</div>
+                        </div>
+                        <div class="flex-0">
+                            <span class="badge bg-green">Active</span>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex align-items-center">
+                        <div class="flex-1">
+                            <strong>inet nat</strong>
+                            <div class="text-muted">Network address translation</div>
+                        </div>
+                        <div class="flex-0">
+                            <span class="badge bg-green">Active</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h4>Chains</h4>
+                <div class="list-group">
+                    {{range .config.Chains}}
+                    <div class="list-group-item d-flex align-items-center">
+                        <div class="flex-1">
+                            <strong>{{.Name}}</strong>
+                            <div class="text-muted">Policy: {{.Policy}}</div>
+                        </div>
+                        <div class="flex-0">
+                            <button class="btn btn-white btn-sm" onclick="editChain('{{.Name}}')">Edit</button>
+                        </div>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Rules -->
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table">
+                <thead>
+                    <tr>
+                        <th>Chain</th>
+                        <th>Rule</th>
+                        <th>Action</th>
+                        <th>Packets</th>
+                        <th>Bytes</th>
+                        <th>Status</th>
+                        <th class="w-1">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{if .config.Rules}}
+                        {{range .config.Rules}}
+                        <tr>
+                            <td>
+                                <span class="badge bg-blue">{{.Chain}}</span>
+                            </td>
+                            <td>
+                                <div class="text-truncate" style="max-width: 300px;">
+                                    {{if .Protocol}}{{.Protocol}}{{end}}
+                                    {{if .Source}}src {{.Source}}{{end}}
+                                    {{if .Destination}}dst {{.Destination}}{{end}}
+                                    {{if .Port}}port {{.Port}}{{end}}
+                                </div>
+                                <small class="text-muted">{{.Name}}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{if eq .Action "ACCEPT"}}green{{else if eq .Action "DROP"}}red{{else if eq .Action "REJECT"}}yellow{{else}}secondary{{end}}">
+                                    {{.Action}}
+                                </span>
+                            </td>
+                            <td>-</td>
+                            <td>-</td>
+                            <td>
+                                {{if .Enabled}}
+                                    <span class="status status-green">
+                                        <span class="status-dot status-dot-animated"></span>
+                                        Enabled
+                                    </span>
+                                {{else}}
+                                    <span class="status status-gray">
+                                        <span class="status-dot"></span>
+                                        Disabled
+                                    </span>
+                                {{end}}
+                            </td>
+                            <td>
+                                <div class="btn-list flex-nowrap">
+                                    <button class="btn btn-white btn-sm" onclick="editRule({{.ID}})">Edit</button>
+                                    <button class="btn btn-white btn-sm" onclick="toggleRule({{.ID}})">
+                                        {{if .Enabled}}Disable{{else}}Enable{{end}}
+                                    </button>
+                                    <button class="btn btn-white btn-sm" onclick="deleteRule({{.ID}})">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                        {{end}}
+                    {{else}}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">No NFTables rules configured</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Rule Templates -->
+        <div class="mt-4">
+            <h4>Quick Rule Templates</h4>
+            <div class="row">
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-outline-primary w-100 mb-2" onclick="addTemplateRule('allow_ssh')">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <rect x="4" y="4" width="16" height="16" rx="2"/>
+                            <path d="M9 9h6v6h-6z"/>
+                        </svg>
+                        Allow SSH
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-outline-primary w-100 mb-2" onclick="addTemplateRule('allow_http')">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M3 12h3m12 0h3"/>
+                            <path d="M12 3v3m0 12v3"/>
+                            <circle cx="12" cy="12" r="6"/>
+                        </svg>
+                        Allow HTTP/HTTPS
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-outline-primary w-100 mb-2" onclick="addTemplateRule('block_country')">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <circle cx="12" cy="12" r="9"/>
+                            <path d="m9 12l2 2l4 -4"/>
+                        </svg>
+                        Block Country
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <button type="button" class="btn btn-outline-primary w-100 mb-2" onclick="addTemplateRule('port_forward')">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M9 12l-4 -4l4 -4"/>
+                            <path d="M15 12l4 -4l-4 -4"/>
+                            <path d="M12 3v18"/>
+                        </svg>
+                        Port Forward
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function addTemplateRule(template) {
+    const modal = new bootstrap.Modal(document.getElementById('firewall-rule-modal'));
+    const form = document.getElementById('firewall-rule-form');
+    
+    // Reset form
+    form.reset();
+    
+    switch(template) {
+        case 'allow_ssh':
+            form.elements['name'].value = 'Allow SSH';
+            form.elements['chain'].value = 'INPUT';
+            form.elements['action'].value = 'ACCEPT';
+            form.elements['protocol'].value = 'tcp';
+            form.elements['port'].value = '22';
+            break;
+        case 'allow_http':
+            form.elements['name'].value = 'Allow HTTP/HTTPS';
+            form.elements['chain'].value = 'INPUT';
+            form.elements['action'].value = 'ACCEPT';
+            form.elements['protocol'].value = 'tcp';
+            form.elements['port'].value = '80,443';
+            break;
+        case 'block_country':
+            form.elements['name'].value = 'Block Country';
+            form.elements['chain'].value = 'INPUT';
+            form.elements['action'].value = 'DROP';
+            form.elements['source'].value = 'country-code';
+            break;
+        case 'port_forward':
+            form.elements['name'].value = 'Port Forward';
+            form.elements['chain'].value = 'FORWARD';
+            form.elements['action'].value = 'ACCEPT';
+            form.elements['protocol'].value = 'tcp';
+            break;
+    }
+    
+    modal.show();
+}
+
+function editChain(chainName) {
+    alert(`Edit Chain ${chainName} - Implementation needed`);
+}
+
+function editRule(ruleId) {
+    alert(`Edit Rule ${ruleId} - Implementation needed`);
+}
+
+function toggleRule(ruleId) {
+    fetch(`/api/network/firewall/rules/${ruleId}/toggle`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
+            alert('Error: ' + result.error);
+        } else {
+            location.reload();
+        }
+    })
+    .catch(error => alert('Error toggling rule: ' + error));
+}
+
+function deleteRule(ruleId) {
+    if (confirm('Are you sure you want to delete this rule?')) {
+        fetch(`/api/network/firewall/rules/${ruleId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert('Error: ' + result.error);
+            } else {
+                location.reload();
+            }
+        })
+        .catch(error => alert('Error deleting rule: ' + error));
+    }
+}
+
+function exportNFTables() {
+    fetch('/api/network/firewall/export')
+        .then(response => response.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'nftables-rules.conf';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+        });
+}
+
+function importNFTables() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.conf,.txt';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const formData = new FormData();
+            formData.append('rules_file', file);
+            
+            fetch('/api/network/firewall/import', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.error) {
+                    alert('Error: ' + result.error);
+                } else {
+                    alert('Rules imported successfully');
+                    location.reload();
+                }
+            })
+            .catch(error => alert('Error importing rules: ' + error));
+        }
+    };
+    input.click();
+}
+
+function resetToDefaults() {
+    if (confirm('Are you sure you want to reset to default firewall rules? This will remove all custom rules.')) {
+        fetch('/api/network/firewall/reset', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.error) {
+                alert('Error: ' + result.error);
+            } else {
+                alert('Firewall reset to defaults');
+                location.reload();
+            }
+        })
+        .catch(error => alert('Error resetting firewall: ' + error));
+    }
+}
+</script>
