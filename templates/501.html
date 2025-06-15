@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+    <title>{{.title}} - RouterSBC</title>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css" rel="stylesheet"/>
+    <link href="/static/css/custom.css" rel="stylesheet"/>
+    <style>
+      @import url('https://rsms.me/inter/inter.css');
+      :root {
+      	--tblr-font-sans-serif: 'Inter Var', -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif;
+      }
+      body {
+      	font-feature-settings: "cv03", "cv04", "cv11";
+      }
+    </style>
+</head>
+<body class="d-flex flex-column">
+    <script src="/static/js/theme.js"></script>
+    <div class="page page-center">
+        <div class="container-tight py-4">
+            <div class="empty">
+                <div class="empty-img">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgdmlld0JveD0iMCAwIDI1NiAyNTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjEyOCIgY3k9IjEyOCIgcj0iNDAiIGZpbGw9IiNGOEY5RkEiLz4KPHBhdGggZD0iTTEyOCA4OEMxNTAuMDkxIDg4IDE2OCAxMDUuOTA5IDE2OCAxMjhDMTY4IDE1MC4wOTEgMTUwLjA5MSAxNjggMTI4IDE2OEMxMDUuOTA5IDE2OCA4OCAxNTAuMDkxIDg4IDEyOEM4OCAxMDUuOTA5IDEwNS45MDkgODggMTI4IDg4WiIgc3Ryb2tlPSIjNjM2NjZCIiBzdHJva2Utd2lkdGg9IjIiLz4KPHBhdGggZD0iTTEyOCAxMTJWMTI4IiBzdHJva2U9IiM2MzY2NkIiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CjxwYXRoIGQ9Ik0xMjggMTQ0SDE0NCIgc3Ryb2tlPSIjNjM2NjZCIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K" alt="501 Error" height="128" width="128">
+                </div>
+                <p class="empty-title">501 - Not Implemented</p>
+                <p class="empty-subtitle text-muted">
+                    {{if .error}}{{.error}}{{else}}This feature is not yet implemented.{{end}}
+                </p>
+                <div class="empty-action">
+                    <a href="/" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M5 12l14 0"/>
+                            <path d="m5 12l6 6"/>
+                            <path d="m5 12l6 -6"/>
+                        </svg>
+                        Take me home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Development notice -->
+    <div class="container-tight">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="card-title">Feature Under Development</h3>
+                        <p class="text-muted">
+                            This feature is currently being developed and will be available in a future update. 
+                            In the meantime, you can use the available features to manage your router.
+                        </p>
+                        
+                        <div class="row mt-3">
+                            <div class="col-6">
+                                <a href="/network" class="btn btn-outline-primary w-100 mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M6 9a6 6 0 1 0 12 0a6 6 0 0 0 -12 0"/>
+                                        <path d="M12 3c1.333 .333 2 2.333 2 6s-.667 5.667 -2 6"/>
+                                        <path d="M12 3c-1.333 .333 -2 2.333 -2 6s.667 5.667 2 6"/>
+                                        <path d="M6 9h12"/>
+                                        <path d="M3 20h7l-1 -1"/>
+                                        <path d="M21 20h-7l1 -1"/>
+                                    </svg>
+                                    Network Settings
+                                </a>
+                            </div>
+                            <div class="col-6">
+                                <a href="/system" class="btn btn-outline-primary w-100 mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"/>
+                                        <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/>
+                                    </svg>
+                                    System Settings
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js" defer></script>
+</body>
+</html>
