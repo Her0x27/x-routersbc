@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+    <title>{{.title}} - RouterSBC</title>
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/css/tabler.min.css" rel="stylesheet"/>
+    <link href="/static/css/custom.css" rel="stylesheet"/>
+    <style>
+      @import url('https://rsms.me/inter/inter.css');
+      :root {
+      	--tblr-font-sans-serif: 'Inter Var', -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif;
+      }
+      body {
+      	font-feature-settings: "cv03", "cv04", "cv11";
+      }
+    </style>
+</head>
+<body class="d-flex flex-column">
+    <script src="/static/js/theme.js"></script>
+    <div class="page page-center">
+        <div class="container-tight py-4">
+            <div class="empty">
+                <div class="empty-img">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjI1NiIgdmlld0JveD0iMCAwIDI1NiAyNTYiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik04OCA4OEMxMTAuMDkxIDg4IDEyOCAxMDUuOTA5IDEyOCAxMjhDMTI4IDE1MC4wOTEgMTEwLjA5MSAxNjggODggMTY4QzY1LjkwODYgMTY4IDQ4IDE1MC4wOTEgNDggMTI4QzQ4IDEwNS45MDkgNjUuOTA4NiA4OCA4OCA4OFoiIGZpbGw9IiNGOEY5RkEiLz4KPHBhdGggZD0iTTE2OCA4OEMxOTAuMDkxIDg4IDIwOCAxMDUuOTA5IDIwOCAxMjhDMjA4IDE1MC4wOTEgMTkwLjA5MSAxNjggMTY4IDE2OEMxNDUuOTA5IDE2OCAxMjggMTUwLjA5MSAxMjggMTI4QzEyOCAxMDUuOTA5IDE0NS45MDkgODggMTY4IDg4WiIgZmlsbD0iI0Y4RjlGQSIvPgo8L3N2Zz4K" alt="404 Error" height="128" width="128">
+                </div>
+                <p class="empty-title">404 - Page Not Found</p>
+                <p class="empty-subtitle text-muted">
+                    {{if .error}}{{.error}}{{else}}The page you are looking for doesn't exist.{{end}}
+                </p>
+                <div class="empty-action">
+                    <a href="/" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M5 12l14 0"/>
+                            <path d="m5 12l6 6"/>
+                            <path d="m5 12l6 -6"/>
+                        </svg>
+                        Take me home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Additional helpful navigation -->
+    <div class="container-tight">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="card-title">Quick Navigation</h3>
+                        <div class="row">
+                            <div class="col-6">
+                                <a href="/network" class="btn btn-outline-primary w-100 mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M6 9a6 6 0 1 0 12 0a6 6 0 0 0 -12 0"/>
+                                        <path d="M12 3c1.333 .333 2 2.333 2 6s-.667 5.667 -2 6"/>
+                                        <path d="M12 3c-1.333 .333 -2 2.333 -2 6s.667 5.667 2 6"/>
+                                        <path d="M6 9h12"/>
+                                        <path d="M3 20h7l-1 -1"/>
+                                        <path d="M21 20h-7l1 -1"/>
+                                    </svg>
+                                    Network
+                                </a>
+                            </div>
+                            <div class="col-6">
+                                <a href="/system" class="btn btn-outline-primary w-100 mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065z"/>
+                                        <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/>
+                                    </svg>
+                                    System
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js" defer></script>
+</body>
+</html>
