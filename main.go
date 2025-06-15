@@ -6,9 +6,9 @@ import (
         "os"
 
         "github.com/labstack/echo/v4"
-        "github.com/Her0x27/x-routersbc/core"
-        "github.com/Her0x27/x-routersbc/handlers"
-        "github.com/Her0x27/x-routersbc/routes"
+        "routersbc/core"
+        "routersbc/handlers"
+        "routersbc/routes"
 )
 
 func main() {
