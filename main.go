@@ -38,3 +38,13 @@ func main() {
                 log.Fatalf("Failed to start server: %v", err)
         }
 }
+
+func setupAllRoutes(e *echo.Echo, db *sql.DB) {
+        // Initialize handlers
+        authHandler := handlers.NewAuthHandler(db)
+        networkHandler := handlers.NewNetworkHandler(db)
+        systemHandler := handlers.NewSystemHandler(db)
+        
+        // Setup routes
+        routes.SetupRoutes(e, authHandler, networkHandler, systemHandler)
+}

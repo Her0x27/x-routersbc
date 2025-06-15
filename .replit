@@ -21,7 +21,8 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "go run main.go"
+args = "go mod tidy && go run main.go"
+waitForPort = 5000
 
 [deployment]
 run = ["sh", "-c", "go mod init github.com/Her0x27/x-routersbc && go mod tidy && go run main.go"]
