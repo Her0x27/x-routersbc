@@ -1,97 +1,26 @@
 package services
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
-	"os/exec"
-	"strings"
 
-	"github.com/Her0x27/x-routersbc/core"
 	"github.com/Her0x27/x-routersbc/utils/configurators/net"
 )
 
-// NetworkInterface represents a network interface
+type NetworkService struct {
+	db *sql.DB
+}
+
 type NetworkInterface struct {
 	ID      int    `json:"id"`
 	Name    string `json:"name"`
 	Type    string `json:"type"`
 	Enabled bool   `json:"enabled"`
-	Status  string `json:"status"`
-	IP      string `json:"ip"`
-	MAC     string `json:"mac"`
 	Config  string `json:"config"`
 }
 
-// InterfaceRequest represents a request to create/update an interface
-type InterfaceRequest struct {
-	Name    string `json:"name"`
-	Type    string `json:"type"`
-	Enabled bool   `json:"enabled"`
-	Config  string `json:"config"`
-}
-
-// WANConfig represents WAN configuration
-type WANConfig struct {
-	Interface    string `json:"interface"`
-	ConnectionType string `json:"connection_type"`
-	IP           string `json:"ip"`
-	Netmask      string `json:"netmask"`
-	Gateway      string `json:"gateway"`
-	DNS1         string `json:"dns1"`
-	DNS2         string `json:"dns2"`
-	Enabled      bool   `json:"enabled"`
-}
-
-// WANConfigRequest represents a WAN configuration request
-type WANConfigRequest struct {
-	Interface    string `json:"interface"`
-	ConnectionType string `json:"connection_type"`
-	IP           string `json:"ip"`
-	Netmask      string `json:"netmask"`
-	Gateway      string `json:"gateway"`
-	DNS1         string `json:"dns1"`
-	DNS2         string `json:"dns2"`
-	Enabled      bool   `json:"enabled"`
-}
-
-// LANConfig represents LAN configuration
-type LANConfig struct {
-	Interface   string `json:"interface"`
-	IP          string `json:"ip"`
-	Netmask     string `json:"netmask"`
-	DHCPEnabled bool   `json:"dhcp_enabled"`
-	DHCPStart   string `json:"dhcp_start"`
-	DHCPEnd     string `json:"dhcp_end"`
-	DNSProxy    bool   `json:"dns_proxy"`
-	DNSServers  []string `json:"dns_servers"`
-}
-
-// WirelessConfig represents wireless configuration
-type WirelessConfig struct {
-	Interfaces []WirelessInterface `json:"interfaces"`
-}
-
-// WirelessInterface represents a wireless interface
-type WirelessInterface struct {
-	Name     string            `json:"name"`
-	Mode     string            `json:"mode"`
-	SSID     string            `json:"ssid"`
-	Channel  int               `json:"channel"`
-	Security string            `json:"security"`
-	Password string            `json:"password"`
-	Enabled  bool              `json:"enabled"`
-	Clients  []WirelessClient  `json:"clients"`
-}
-
-// WirelessClient represents a connected wireless client
-type WirelessClient struct {
-	MAC    string `json:"mac"`
-	IP     string `json:"ip"`
-	Signal int    `json:"signal"`
-}
-
-// Route represents a network route
-type Route struct {
+type StaticRoute struct {
 	ID          int    `json:"id"`
 	Interface   string `json:"interface"`
 	Destination string `json:"destination"`
@@ -100,371 +29,366 @@ type Route struct {
 	Enabled     bool   `json:"enabled"`
 }
 
-// RouteRequest represents a route creation request
-type RouteRequest struct {
-	Interface   string `json:"interface"`
-	Destination string `json:"destination"`
-	Gateway     string `json:"gateway"`
-	Metric      int    `json:"metric"`
-	Enabled     bool   `json:"enabled"`
-}
-
-// FirewallConfig represents firewall configuration
-type FirewallConfig struct {
-	Backend string          `json:"backend"`
-	Rules   []FirewallRule  `json:"rules"`
-	Chains  []FirewallChain `json:"chains"`
-}
-
-// FirewallRule represents a firewall rule
 type FirewallRule struct {
 	ID       int    `json:"id"`
+	Name     string `json:"name"`
 	Chain    string `json:"chain"`
 	RuleText string `json:"rule_text"`
-	Position int    `json:"position"`
 	Enabled  bool   `json:"enabled"`
+	Position int    `json:"position"`
 }
 
-// FirewallChain represents a firewall chain
-type FirewallChain struct {
-	Name   string `json:"name"`
-	Policy string `json:"policy"`
-	Rules  int    `json:"rules"`
+type WANConfiguration struct {
+	Interface     string `json:"interface"`
+	ConnectionType string `json:"connection_type"`
+	Config        map[string]interface{} `json:"config"`
 }
 
-// NetworkService handles network operations
-type NetworkService struct {
-	db           *core.DatabaseService
-	netConfigurator *net.NetworkConfigurator
+type LANConfiguration struct {
+	DHCPEnabled   bool   `json:"dhcp_enabled"`
+	DHCPMode      string `json:"dhcp_mode"`
+	DNSMode       string `json:"dns_mode"`
+	BridgeEnabled bool   `json:"bridge_enabled"`
+	Config        map[string]interface{} `json:"config"`
 }
 
-// NewNetworkService creates a new network service
-func NewNetworkService() *NetworkService {
-	return &NetworkService{
-		netConfigurator: net.NewNetworkConfigurator(),
-	}
+type WirelessConfiguration struct {
+	APEnabled   bool `json:"ap_enabled"`
+	STAEnabled  bool `json:"sta_enabled"`
+	APConfig    map[string]interface{} `json:"ap_config"`
+	STAConfig   map[string]interface{} `json:"sta_config"`
 }
 
-// GetInterfaces returns all network interfaces
-func (s *NetworkService) GetInterfaces() ([]NetworkInterface, error) {
-	interfaces := []NetworkInterface{}
-	
-	// Get system interfaces
-	systemInterfaces, err := s.getSystemInterfaces()
+type FirewallConfiguration struct {
+	Backend string         `json:"backend"`
+	Rules   []FirewallRule `json:"rules"`
+	Chains  []string       `json:"chains"`
+}
+
+func NewNetworkService(db *sql.DB) *NetworkService {
+	return &NetworkService{db: db}
+}
+
+func (s *NetworkService) GetNetworkInterfaces() ([]NetworkInterface, error) {
+	// Get real network interfaces from the system
+	realInterfaces, err := net.GetSystemInterfaces()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get system interfaces: %v", err)
 	}
-
-	// Get database interfaces
-	dbInterfaces, err := s.getDatabaseInterfaces()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get database interfaces: %v", err)
-	}
-
-	// Merge system and database interfaces
-	interfaceMap := make(map[string]*NetworkInterface)
 	
-	// Add system interfaces
-	for _, iface := range systemInterfaces {
-		interfaceMap[iface.Name] = &iface
-	}
-
-	// Update with database information
-	for _, dbIface := range dbInterfaces {
-		if existing, ok := interfaceMap[dbIface.Name]; ok {
-			existing.ID = dbIface.ID
-			existing.Type = dbIface.Type
-			existing.Enabled = dbIface.Enabled
-			existing.Config = dbIface.Config
-		} else {
-			// Interface exists in database but not in system
-			dbIface.Status = "down"
-			interfaceMap[dbIface.Name] = &dbIface
-		}
-	}
-
-	for _, iface := range interfaceMap {
-		interfaces = append(interfaces, *iface)
-	}
-
-	return interfaces, nil
-}
-
-// getSystemInterfaces gets actual system network interfaces
-func (s *NetworkService) getSystemInterfaces() ([]NetworkInterface, error) {
-	interfaces := []NetworkInterface{}
-
-	// Use ip command to get interfaces
-	cmd := exec.Command("ip", "link", "show")
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, err
-	}
-
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
-		if strings.Contains(line, ": ") && !strings.HasPrefix(line, " ") {
-			parts := strings.Split(line, ": ")
-			if len(parts) >= 2 {
-				name := strings.Split(parts[1], "@")[0] // Remove @ and everything after
-				
-				// Get interface details
-				status := "down"
-				if strings.Contains(line, "UP") {
-					status = "up"
-				}
-
-				mac := s.getMACAddress(name)
-				ip := s.getIPAddress(name)
-
-				interfaces = append(interfaces, NetworkInterface{
-					Name:   name,
-					Status: status,
-					MAC:    mac,
-					IP:     ip,
-				})
-			}
-		}
-	}
-
-	return interfaces, nil
-}
-
-// getDatabaseInterfaces gets interfaces from database
-func (s *NetworkService) getDatabaseInterfaces() ([]NetworkInterface, error) {
-	interfaces := []NetworkInterface{}
-	
-	db := core.GetDB()
-	rows, err := db.Query("SELECT id, name, type, enabled, config FROM network_interfaces")
+	// Get configured interfaces from database
+	rows, err := s.db.Query(`
+		SELECT id, name, type, enabled, config 
+		FROM network_interfaces 
+		ORDER BY name
+	`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
+	
+	var interfaces []NetworkInterface
 	for rows.Next() {
 		var iface NetworkInterface
-		err := rows.Scan(&iface.ID, &iface.Name, &iface.Type, &iface.Enabled, &iface.Config)
-		if err != nil {
-			continue
+		if err := rows.Scan(&iface.ID, &iface.Name, &iface.Type, &iface.Enabled, &iface.Config); err != nil {
+			return nil, err
 		}
 		interfaces = append(interfaces, iface)
 	}
-
-	return interfaces, nil
+	
+	// Merge with real system interfaces
+	return s.mergeWithSystemInterfaces(interfaces, realInterfaces), nil
 }
 
-// getMACAddress gets MAC address for an interface
-func (s *NetworkService) getMACAddress(interfaceName string) string {
-	cmd := exec.Command("cat", fmt.Sprintf("/sys/class/net/%s/address", interfaceName))
-	output, err := cmd.Output()
-	if err != nil {
-		return ""
+func (s *NetworkService) mergeWithSystemInterfaces(dbInterfaces []NetworkInterface, sysInterfaces []net.SystemInterface) []NetworkInterface {
+	// Create a map of database interfaces by name
+	dbMap := make(map[string]NetworkInterface)
+	for _, iface := range dbInterfaces {
+		dbMap[iface.Name] = iface
 	}
-	return strings.TrimSpace(string(output))
-}
-
-// getIPAddress gets IP address for an interface
-func (s *NetworkService) getIPAddress(interfaceName string) string {
-	cmd := exec.Command("ip", "addr", "show", interfaceName)
-	output, err := cmd.Output()
-	if err != nil {
-		return ""
-	}
-
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
-		if strings.Contains(line, "inet ") && !strings.Contains(line, "inet6") {
-			parts := strings.Fields(strings.TrimSpace(line))
-			if len(parts) >= 2 {
-				return strings.Split(parts[1], "/")[0]
-			}
+	
+	var merged []NetworkInterface
+	
+	// Add all system interfaces, merging with database config if available
+	for _, sysIface := range sysInterfaces {
+		if dbIface, exists := dbMap[sysIface.Name]; exists {
+			// Use database configuration
+			merged = append(merged, dbIface)
+		} else {
+			// Create new interface from system data
+			merged = append(merged, NetworkInterface{
+				Name:    sysIface.Name,
+				Type:    sysIface.Type,
+				Enabled: sysIface.IsUp,
+				Config:  fmt.Sprintf(`{"ip": "%s", "mac": "%s"}`, sysIface.IP, sysIface.MAC),
+			})
 		}
 	}
-	return ""
-}
-
-// CreateInterface creates a new network interface
-func (s *NetworkService) CreateInterface(req InterfaceRequest) error {
-	db := core.GetDB()
 	
-	// Insert into database
-	query := "INSERT INTO network_interfaces (name, type, enabled, config) VALUES (?, ?, ?, ?)"
-	_, err := db.Exec(query, req.Name, req.Type, req.Enabled, req.Config)
-	if err != nil {
-		return err
-	}
-
-	// Apply configuration using appropriate configurator
-	return s.netConfigurator.CreateInterface(req.Name, req.Type, req.Config)
+	return merged
 }
 
-// UpdateInterface updates an existing network interface
-func (s *NetworkService) UpdateInterface(id int, req InterfaceRequest) error {
-	db := core.GetDB()
+func (s *NetworkService) CreateNetworkInterface(iface *NetworkInterface) error {
+	// Apply configuration to system
+	if err := net.ApplyInterfaceConfiguration(iface.Name, iface.Type, iface.Config); err != nil {
+		return fmt.Errorf("failed to apply interface configuration: %v", err)
+	}
+	
+	// Save to database
+	_, err := s.db.Exec(`
+		INSERT INTO network_interfaces (name, type, enabled, config) 
+		VALUES (?, ?, ?, ?)
+	`, iface.Name, iface.Type, iface.Enabled, iface.Config)
+	
+	return err
+}
+
+func (s *NetworkService) UpdateNetworkInterface(iface *NetworkInterface) error {
+	// Apply configuration to system
+	if err := net.ApplyInterfaceConfiguration(iface.Name, iface.Type, iface.Config); err != nil {
+		return fmt.Errorf("failed to apply interface configuration: %v", err)
+	}
 	
 	// Update database
-	query := "UPDATE network_interfaces SET name = ?, type = ?, enabled = ?, config = ? WHERE id = ?"
-	_, err := db.Exec(query, req.Name, req.Type, req.Enabled, req.Config, id)
-	if err != nil {
-		return err
-	}
-
-	// Apply configuration
-	return s.netConfigurator.UpdateInterface(req.Name, req.Type, req.Config)
+	_, err := s.db.Exec(`
+		UPDATE network_interfaces 
+		SET type = ?, enabled = ?, config = ? 
+		WHERE id = ?
+	`, iface.Type, iface.Enabled, iface.Config, iface.ID)
+	
+	return err
 }
 
-// DeleteInterface removes a network interface
-func (s *NetworkService) DeleteInterface(id int) error {
-	db := core.GetDB()
-	
-	// Get interface name first
+func (s *NetworkService) DeleteNetworkInterface(id int) error {
+	// Get interface name for system cleanup
 	var name string
-	err := db.QueryRow("SELECT name FROM network_interfaces WHERE id = ?", id).Scan(&name)
+	err := s.db.QueryRow("SELECT name FROM network_interfaces WHERE id = ?", id).Scan(&name)
 	if err != nil {
 		return err
 	}
-
-	// Delete from database
-	_, err = db.Exec("DELETE FROM network_interfaces WHERE id = ?", id)
-	if err != nil {
-		return err
-	}
-
+	
 	// Remove from system
-	return s.netConfigurator.DeleteInterface(name)
-}
-
-// GetWANConfig returns WAN configuration
-func (s *NetworkService) GetWANConfig() (*WANConfig, error) {
-	return s.netConfigurator.GetWANConfig()
-}
-
-// UpdateWANConfig updates WAN configuration
-func (s *NetworkService) UpdateWANConfig(req WANConfigRequest) error {
-	config := &WANConfig{
-		Interface:      req.Interface,
-		ConnectionType: req.ConnectionType,
-		IP:             req.IP,
-		Netmask:        req.Netmask,
-		Gateway:        req.Gateway,
-		DNS1:           req.DNS1,
-		DNS2:           req.DNS2,
-		Enabled:        req.Enabled,
+	if err := net.RemoveInterfaceConfiguration(name); err != nil {
+		return fmt.Errorf("failed to remove interface configuration: %v", err)
 	}
 	
-	return s.netConfigurator.UpdateWANConfig(config)
+	// Delete from database
+	_, err = s.db.Exec("DELETE FROM network_interfaces WHERE id = ?", id)
+	return err
 }
 
-// GetLANConfig returns LAN configuration
-func (s *NetworkService) GetLANConfig() (*LANConfig, error) {
-	return s.netConfigurator.GetLANConfig()
-}
-
-// GetWirelessConfig returns wireless configuration
-func (s *NetworkService) GetWirelessConfig() (*WirelessConfig, error) {
-	return s.netConfigurator.GetWirelessConfig()
-}
-
-// GetRoutes returns routing table
-func (s *NetworkService) GetRoutes() ([]Route, error) {
-	routes := []Route{}
+func (s *NetworkService) GetWANConfiguration() (*WANConfiguration, error) {
+	config, err := net.GetWANConfiguration()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get WAN configuration: %v", err)
+	}
 	
-	db := core.GetDB()
-	rows, err := db.Query("SELECT id, interface, destination, gateway, metric, enabled FROM network_routes")
+	return &WANConfiguration{
+		Interface:      config.Interface,
+		ConnectionType: config.Type,
+		Config:         config.Settings,
+	}, nil
+}
+
+func (s *NetworkService) GetLANConfiguration() (*LANConfiguration, error) {
+	dhcpConfig, err := net.GetDHCPConfiguration()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get DHCP configuration: %v", err)
+	}
+	
+	dnsConfig, err := net.GetDNSConfiguration()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get DNS configuration: %v", err)
+	}
+	
+	return &LANConfiguration{
+		DHCPEnabled:   dhcpConfig.Enabled,
+		DHCPMode:      dhcpConfig.Mode,
+		DNSMode:       dnsConfig.Mode,
+		BridgeEnabled: false, // TODO: Implement bridge detection
+		Config: map[string]interface{}{
+			"dhcp": dhcpConfig,
+			"dns":  dnsConfig,
+		},
+	}, nil
+}
+
+func (s *NetworkService) GetWirelessConfiguration() (*WirelessConfiguration, error) {
+	// Get wireless interface configuration
+	apConfig, err := net.GetWirelessAPConfiguration()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get wireless AP configuration: %v", err)
+	}
+	
+	staConfig, err := net.GetWirelessSTAConfiguration()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get wireless STA configuration: %v", err)
+	}
+	
+	return &WirelessConfiguration{
+		APEnabled:  apConfig.Enabled,
+		STAEnabled: staConfig.Enabled,
+		APConfig:   apConfig.Settings,
+		STAConfig:  staConfig.Settings,
+	}, nil
+}
+
+func (s *NetworkService) GetStaticRoutes() ([]StaticRoute, error) {
+	// Get routes from database
+	rows, err := s.db.Query(`
+		SELECT id, interface, destination, gateway, metric, enabled 
+		FROM static_routes 
+		ORDER BY destination
+	`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
+	
+	var routes []StaticRoute
 	for rows.Next() {
-		var route Route
-		err := rows.Scan(&route.ID, &route.Interface, &route.Destination, &route.Gateway, &route.Metric, &route.Enabled)
-		if err != nil {
-			continue
+		var route StaticRoute
+		if err := rows.Scan(&route.ID, &route.Interface, &route.Destination, &route.Gateway, &route.Metric, &route.Enabled); err != nil {
+			return nil, err
 		}
 		routes = append(routes, route)
 	}
-
-	return routes, nil
+	
+	// Merge with system routes
+	systemRoutes, err := net.GetSystemRoutes()
+	if err != nil {
+		return routes, nil // Return database routes if system routes fail
+	}
+	
+	return s.mergeWithSystemRoutes(routes, systemRoutes), nil
 }
 
-// CreateRoute creates a new static route
-func (s *NetworkService) CreateRoute(req RouteRequest) error {
-	db := core.GetDB()
+func (s *NetworkService) mergeWithSystemRoutes(dbRoutes []StaticRoute, sysRoutes []net.SystemRoute) []StaticRoute {
+	// For now, return database routes
+	// TODO: Implement proper merging logic
+	return dbRoutes
+}
+
+func (s *NetworkService) CreateStaticRoute(route *StaticRoute) error {
+	// Apply route to system
+	if err := net.AddStaticRoute(route.Destination, route.Gateway, route.Interface, route.Metric); err != nil {
+		return fmt.Errorf("failed to add static route: %v", err)
+	}
 	
-	// Insert into database
-	query := "INSERT INTO network_routes (interface, destination, gateway, metric, enabled) VALUES (?, ?, ?, ?, ?)"
-	_, err := db.Exec(query, req.Interface, req.Destination, req.Gateway, req.Metric, req.Enabled)
+	// Save to database
+	_, err := s.db.Exec(`
+		INSERT INTO static_routes (interface, destination, gateway, metric, enabled) 
+		VALUES (?, ?, ?, ?, ?)
+	`, route.Interface, route.Destination, route.Gateway, route.Metric, route.Enabled)
+	
+	return err
+}
+
+func (s *NetworkService) UpdateStaticRoute(route *StaticRoute) error {
+	// Get old route for removal
+	var oldDest, oldGateway, oldInterface string
+	var oldMetric int
+	err := s.db.QueryRow(`
+		SELECT destination, gateway, interface, metric 
+		FROM static_routes WHERE id = ?
+	`, route.ID).Scan(&oldDest, &oldGateway, &oldInterface, &oldMetric)
+	
 	if err != nil {
 		return err
 	}
-
-	// Apply route
-	return s.netConfigurator.AddRoute(req.Interface, req.Destination, req.Gateway, req.Metric)
+	
+	// Remove old route
+	net.RemoveStaticRoute(oldDest, oldGateway, oldInterface, oldMetric)
+	
+	// Add new route
+	if err := net.AddStaticRoute(route.Destination, route.Gateway, route.Interface, route.Metric); err != nil {
+		return fmt.Errorf("failed to update static route: %v", err)
+	}
+	
+	// Update database
+	_, err = s.db.Exec(`
+		UPDATE static_routes 
+		SET interface = ?, destination = ?, gateway = ?, metric = ?, enabled = ? 
+		WHERE id = ?
+	`, route.Interface, route.Destination, route.Gateway, route.Metric, route.Enabled, route.ID)
+	
+	return err
 }
 
-// GetFirewallConfig returns firewall configuration
-func (s *NetworkService) GetFirewallConfig() (*FirewallConfig, error) {
-	config := &FirewallConfig{
-		Backend: "nftables", // Default to nftables
-		Rules:   []FirewallRule{},
-		Chains:  []FirewallChain{},
+func (s *NetworkService) DeleteStaticRoute(id int) error {
+	// Get route details for system removal
+	var dest, gateway, iface string
+	var metric int
+	err := s.db.QueryRow(`
+		SELECT destination, gateway, interface, metric 
+		FROM static_routes WHERE id = ?
+	`, id).Scan(&dest, &gateway, &iface, &metric)
+	
+	if err != nil {
+		return err
 	}
+	
+	// Remove from system
+	if err := net.RemoveStaticRoute(dest, gateway, iface, metric); err != nil {
+		return fmt.Errorf("failed to remove static route: %v", err)
+	}
+	
+	// Delete from database
+	_, err = s.db.Exec("DELETE FROM static_routes WHERE id = ?", id)
+	return err
+}
 
-	db := core.GetDB()
+func (s *NetworkService) GetFirewallConfiguration() (*FirewallConfiguration, error) {
+	// Determine firewall backend
+	backend, err := net.GetFirewallBackend()
+	if err != nil {
+		return nil, fmt.Errorf("failed to determine firewall backend: %v", err)
+	}
 	
 	// Get rules from database
-	rows, err := db.Query("SELECT id, chain, rule_text, position, enabled FROM firewall_rules ORDER BY position")
+	rows, err := s.db.Query(`
+		SELECT id, name, chain, rule_text, enabled, position 
+		FROM firewall_rules 
+		ORDER BY position, id
+	`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
+	
+	var rules []FirewallRule
 	for rows.Next() {
 		var rule FirewallRule
-		err := rows.Scan(&rule.ID, &rule.Chain, &rule.RuleText, &rule.Position, &rule.Enabled)
-		if err != nil {
-			continue
+		if err := rows.Scan(&rule.ID, &rule.Name, &rule.Chain, &rule.RuleText, &rule.Enabled, &rule.Position); err != nil {
+			return nil, err
 		}
-		config.Rules = append(config.Rules, rule)
+		rules = append(rules, rule)
 	}
-
-	// Get chain information
-	config.Chains = s.getFirewallChains()
-
-	return config, nil
+	
+	// Get available chains
+	chains, err := net.GetFirewallChains(backend)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get firewall chains: %v", err)
+	}
+	
+	return &FirewallConfiguration{
+		Backend: backend,
+		Rules:   rules,
+		Chains:  chains,
+	}, nil
 }
 
-// getFirewallChains gets firewall chain information
-func (s *NetworkService) getFirewallChains() []FirewallChain {
-	chains := []FirewallChain{
-		{Name: "INPUT", Policy: "ACCEPT", Rules: 0},
-		{Name: "OUTPUT", Policy: "ACCEPT", Rules: 0},
-		{Name: "FORWARD", Policy: "ACCEPT", Rules: 0},
+func (s *NetworkService) CreateFirewallRule(rule *FirewallRule) error {
+	// Apply rule to system
+	if err := net.AddFirewallRule(rule.Chain, rule.RuleText, rule.Position); err != nil {
+		return fmt.Errorf("failed to add firewall rule: %v", err)
 	}
-
-	// Count rules per chain
-	db := core.GetDB()
-	rows, err := db.Query("SELECT chain, COUNT(*) FROM firewall_rules GROUP BY chain")
-	if err != nil {
-		return chains
-	}
-	defer rows.Close()
-
-	chainMap := make(map[string]int)
-	for rows.Next() {
-		var chain string
-		var count int
-		if rows.Scan(&chain, &count) == nil {
-			chainMap[chain] = count
-		}
-	}
-
-	for i := range chains {
-		if count, ok := chainMap[chains[i].Name]; ok {
-			chains[i].Rules = count
-		}
-	}
-
-	return chains
+	
+	// Save to database
+	_, err := s.db.Exec(`
+		INSERT INTO firewall_rules (name, chain, rule_text, enabled, position) 
+		VALUES (?, ?, ?, ?, ?)
+	`, rule.Name, rule.Chain, rule.RuleText, rule.Enabled, rule.Position)
+	
+	return err
 }

@@ -1,233 +1,312 @@
 {{define "content"}}
-<!-- Page header -->
 <div class="page-header d-print-none">
     <div class="container-xl">
         <div class="row g-2 align-items-center">
             <div class="col">
-                <h2 class="page-title">
-                    System Settings
-                </h2>
+                <h2 class="page-title">System Settings</h2>
+                <div class="text-muted mt-1">Manage system configuration, user accounts, and device settings</div>
+            </div>
+            <div class="col-auto ms-auto d-print-none">
+                <div class="btn-list">
+                    <a href="#" class="btn btn-outline-secondary" onclick="refreshSystemStatus()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/>
+                            <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>
+                        </svg>
+                        Refresh Status
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
-<!-- Page body -->
+
 <div class="page-body">
     <div class="container-xl">
-        <!-- First login alert -->
-        {{if .showFirstLoginAlert}}
-        <div class="alert alert-warning alert-dismissible" role="alert">
-            <div class="d-flex">
-                <div>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon alert-icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <path d="M10.24 3.957l-8.422 14.06a1.989 1.989 0 0 0 1.7 2.983h16.845a1.989 1.989 0 0 0 1.7 -2.983l-8.423 -14.06a1.989 1.989 0 0 0 -3.4 0z"/>
-                        <path d="M12 9v4"/>
-                        <path d="M12 17h.01"/>
-                    </svg>
-                </div>
-                <div>
-                    <h4 class="alert-title">Security Notice</h4>
-                    For security reasons, please change your default password immediately.
-                    <div class="mt-2">
-                        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#password-modal">
-                            Change Password
-                        </button>
+        <!-- System Status Cards -->
+        <div class="row row-deck row-cards mb-3">
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="subheader">System Load</div>
+                            <div class="ms-auto">
+                                <span class="status-indicator status-green" id="system-load-indicator"></span>
+                            </div>
+                        </div>
+                        <div class="h1 mb-3" id="system-load">Loading...</div>
+                        <div class="d-flex mb-2">
+                            <div>1 min:</div>
+                            <div class="ms-auto" id="load-1m">-</div>
+                        </div>
+                        <div class="d-flex">
+                            <div>5 min:</div>
+                            <div class="ms-auto" id="load-5m">-</div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <a class="btn-close" data-bs-dismiss="alert" aria-label="close"></a>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="subheader">Memory Usage</div>
+                            <div class="ms-auto">
+                                <span class="status-indicator status-yellow" id="memory-indicator"></span>
+                            </div>
+                        </div>
+                        <div class="h1 mb-3" id="memory-usage">Loading...</div>
+                        <div class="d-flex mb-2">
+                            <div>Total:</div>
+                            <div class="ms-auto" id="memory-total">-</div>
+                        </div>
+                        <div class="d-flex">
+                            <div>Available:</div>
+                            <div class="ms-auto" id="memory-available">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="subheader">Storage Usage</div>
+                            <div class="ms-auto">
+                                <span class="status-indicator status-green" id="storage-indicator"></span>
+                            </div>
+                        </div>
+                        <div class="h1 mb-3" id="storage-usage">Loading...</div>
+                        <div class="d-flex mb-2">
+                            <div>Total:</div>
+                            <div class="ms-auto" id="storage-total">-</div>
+                        </div>
+                        <div class="d-flex">
+                            <div>Available:</div>
+                            <div class="ms-auto" id="storage-available">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="subheader">Uptime</div>
+                            <div class="ms-auto">
+                                <span class="status-indicator status-green"></span>
+                            </div>
+                        </div>
+                        <div class="h1 mb-3" id="system-uptime">Loading...</div>
+                        <div class="d-flex mb-2">
+                            <div>Processes:</div>
+                            <div class="ms-auto" id="process-count">-</div>
+                        </div>
+                        <div class="d-flex">
+                            <div>Load avg:</div>
+                            <div class="ms-auto" id="load-avg">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        {{end}}
-        
-        <div class="row row-deck row-cards">
+
+        <div class="row">
             <!-- General Settings -->
-            <div class="col-md-6">
+            <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">General Settings</h3>
                     </div>
                     <div class="card-body">
-                        <form id="general-settings-form">
-                            <div class="mb-3">
-                                <label class="form-label">Change Password</label>
-                                <button type="button" class="btn btn-outline-primary w-100" data-bs-toggle="modal" data-bs-target="#password-modal">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                        <rect x="5" y="11" width="14" height="10" rx="2"/>
-                                        <circle cx="12" cy="16" r="1"/>
-                                        <path d="M8 11v-4a4 4 0 0 1 8 0v4"/>
-                                    </svg>
-                                    Change Password
-                                </button>
+                        <!-- Password Change Section -->
+                        <div class="mb-4">
+                            <h4>Change Password</h4>
+                            {{if .ShowPasswordAlert}}
+                            <div class="alert alert-warning">
+                                <h4>Security Warning</h4>
+                                <p>You are still using the default password. Please change it immediately for security reasons.</p>
                             </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label">Time Zone</label>
-                                <select class="form-select" name="timezone" id="timezone-select">
-                                    <option value="">Loading timezones...</option>
-                                </select>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-label">NTP Server</label>
-                                <input type="text" class="form-control" name="ntp_server" value="pool.ntp.org" placeholder="pool.ntp.org">
-                                <small class="form-hint">Network Time Protocol server for automatic time synchronization</small>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="ntp_enabled" checked>
-                                    <span class="form-check-label">Enable automatic time synchronization</span>
-                                </label>
-                            </div>
-                            
-                            <div class="form-footer">
-                                <button type="submit" class="btn btn-primary">Save Settings</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- System Time -->
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">System Time</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Current Date & Time</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="current-time" readonly>
-                                <button class="btn btn-outline-secondary" type="button" onclick="syncTime()">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                        <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/>
-                                        <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>
-                                    </svg>
-                                    Sync
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">System Uptime</label>
-                            <input type="text" class="form-control" id="system-uptime" readonly>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Last Boot</label>
-                            <input type="text" class="form-control" id="last-boot" readonly>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Backup & Restore -->
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Backup & Restore</h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Create Backup</label>
-                            <p class="text-muted">Create a backup of system configuration including network settings, firewall rules, and user data.</p>
-                            <button type="button" class="btn btn-outline-primary w-100" onclick="createBackup()">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                    <path d="M14 3v4a1 1 0 0 0 1 1h4"/>
-                                    <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/>
-                                    <path d="M12 11v6"/>
-                                    <path d="M9 14l3 -3l3 3"/>
-                                </svg>
-                                Create Backup
-                            </button>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Restore from Backup</label>
-                            <p class="text-muted">Restore system configuration from a previously created backup file.</p>
-                            <form id="restore-form" enctype="multipart/form-data">
-                                <div class="input-group">
-                                    <input type="file" class="form-control" name="backup" accept=".tar.gz,.tgz" required>
-                                    <button class="btn btn-outline-danger" type="submit">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                            <path d="M14 3v4a1 1 0 0 0 1 1h4"/>
-                                            <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"/>
-                                            <path d="M12 17v-6"/>
-                                            <path d="M9 14l3 3l3 -3"/>
-                                        </svg>
-                                        Restore
-                                    </button>
+                            {{end}}
+                            <form id="changePasswordForm">
+                                <div class="mb-3">
+                                    <label class="form-label">Current Password</label>
+                                    <input type="password" class="form-control" name="current_password" required autocomplete="current-password">
                                 </div>
+                                <div class="mb-3">
+                                    <label class="form-label">New Password</label>
+                                    <input type="password" class="form-control" name="new_password" required autocomplete="new-password" minlength="8">
+                                    <small class="form-hint">Minimum 8 characters</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Confirm New Password</label>
+                                    <input type="password" class="form-control" name="confirm_password" required autocomplete="new-password">
+                                </div>
+                                <button type="submit" class="btn btn-primary">Change Password</button>
+                            </form>
+                        </div>
+
+                        <!-- System Time -->
+                        <div class="mb-4">
+                            <h4>System Time</h4>
+                            <form id="timeConfigForm">
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Current Time</label>
+                                            <input type="text" class="form-control" id="current-time" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Timezone</label>
+                                            <select class="form-select" name="timezone">
+                                                <option value="UTC">UTC</option>
+                                                <option value="America/New_York">Eastern Time</option>
+                                                <option value="America/Chicago">Central Time</option>
+                                                <option value="America/Denver">Mountain Time</option>
+                                                <option value="America/Los_Angeles">Pacific Time</option>
+                                                <option value="Europe/London">London</option>
+                                                <option value="Europe/Berlin">Berlin</option>
+                                                <option value="Europe/Moscow">Moscow</option>
+                                                <option value="Asia/Tokyo">Tokyo</option>
+                                                <option value="Asia/Shanghai">Shanghai</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="ntp_enabled" checked>
+                                        <span class="form-check-label">Enable NTP synchronization</span>
+                                    </label>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">NTP Servers</label>
+                                    <textarea class="form-control" name="ntp_servers" rows="3" placeholder="pool.ntp.org&#10;time.nist.gov">pool.ntp.org
+time.nist.gov
+time.google.com</textarea>
+                                    <small class="form-hint">One server per line</small>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Time Settings</button>
                             </form>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- System Information -->
-            <div class="col-md-6">
+
+            <!-- Backup & Restore -->
+            <div class="col-lg-6">
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">System Information</h3>
+                        <h3 class="card-title">Backup & Restore</h3>
                     </div>
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-6">
-                                <div class="mb-2">
-                                    <div class="text-muted">Hostname</div>
-                                    <div id="hostname">Loading...</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="mb-2">
-                                    <div class="text-muted">Kernel</div>
-                                    <div id="kernel">Loading...</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="mb-2">
-                                    <div class="text-muted">Load Average</div>
-                                    <div id="load-average">Loading...</div>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="mb-2">
-                                    <div class="text-muted">Processes</div>
-                                    <div id="processes">Loading...</div>
-                                </div>
-                            </div>
+                        <!-- Create Backup -->
+                        <div class="mb-4">
+                            <h4>Create Backup</h4>
+                            <p class="text-muted">Create a backup of your current system configuration including network settings, firewall rules, and user accounts.</p>
+                            <button type="button" class="btn btn-success" onclick="createBackup()">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <path d="M4 7l16 0"/>
+                                    <path d="M10 11l0 6"/>
+                                    <path d="M14 11l0 6"/>
+                                    <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/>
+                                    <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>
+                                </svg>
+                                Create Backup
+                            </button>
                         </div>
-                        
-                        <div class="mt-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div class="text-muted">Memory Usage</div>
-                                <div id="memory-percent">0%</div>
-                            </div>
-                            <div class="progress">
-                                <div class="progress-bar" id="memory-bar" style="width: 0%" role="progressbar"></div>
-                            </div>
+
+                        <!-- Restore Backup -->
+                        <div class="mb-4">
+                            <h4>Restore from Backup</h4>
+                            <p class="text-muted">Restore system configuration from a previously created backup file. This will restart the system.</p>
+                            <form id="restoreBackupForm" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label class="form-label">Backup File</label>
+                                    <input type="file" class="form-control" name="backup" accept=".tar.gz,.tgz" required>
+                                    <small class="form-hint">Select a .tar.gz backup file</small>
+                                </div>
+                                <button type="submit" class="btn btn-warning">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/>
+                                        <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>
+                                    </svg>
+                                    Restore Backup
+                                </button>
+                            </form>
                         </div>
-                        
-                        <div class="mt-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div class="text-muted">Disk Usage</div>
-                                <div id="disk-percent">0%</div>
-                            </div>
-                            <div class="progress">
-                                <div class="progress-bar" id="disk-bar" style="width: 0%" role="progressbar"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div class="text-muted">Temperature</div>
-                                <div id="temperature">-°C</div>
+
+                        <!-- Quick Actions -->
+                        <div>
+                            <h4>Quick Actions</h4>
+                            <div class="list-group list-group-flush">
+                                <a href="/system/about-devices" class="list-group-item list-group-item-action">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon text-muted" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                <rect x="3" y="4" width="18" height="12" rx="1"/>
+                                                <path d="M7 20h10"/>
+                                                <path d="M9 16v4"/>
+                                                <path d="M15 16v4"/>
+                                            </svg>
+                                        </div>
+                                        <div class="col">
+                                            <div class="font-weight-medium">About This Device</div>
+                                            <div class="text-muted">View hardware information and specifications</div>
+                                        </div>
+                                    </div>
+                                </a>
+                                <a href="/system/portable-devices" class="list-group-item list-group-item-action">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon text-muted" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                <rect x="4" y="4" width="16" height="16" rx="2"/>
+                                                <rect x="9" y="9" width="6" height="6" rx="1"/>
+                                            </svg>
+                                        </div>
+                                        <div class="col">
+                                            <div class="font-weight-medium">Portable Devices</div>
+                                            <div class="text-muted">Manage USB devices and drivers</div>
+                                        </div>
+                                    </div>
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action" onclick="restartSystem()">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon text-warning" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/>
+                                                <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>
+                                            </svg>
+                                        </div>
+                                        <div class="col">
+                                            <div class="font-weight-medium">Restart System</div>
+                                            <div class="text-muted">Reboot the router</div>
+                                        </div>
+                                    </div>
+                                </a>
+                                <a href="#" class="list-group-item list-group-item-action" onclick="shutdownSystem()">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon text-danger" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                <path d="M18 6l-12 12"/>
+                                                <path d="M6 6l12 12"/>
+                                            </svg>
+                                        </div>
+                                        <div class="col">
+                                            <div class="font-weight-medium">Shutdown System</div>
+                                            <div class="text-muted">Power off the router</div>
+                                        </div>
+                                    </div>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -238,181 +317,315 @@
 </div>
 
 <script>
-// Update current time every second
-function updateTime() {
-    const now = new Date();
-    document.getElementById('current-time').value = now.toLocaleString();
-}
-
-// Load system status
-function loadSystemStatus() {
-    fetch('/system/status')
-        .then(response => response.json())
-        .then(data => {
-            // Update system information
-            document.getElementById('hostname').textContent = data.hostname || 'RouterSBC';
-            document.getElementById('kernel').textContent = data.kernel || 'Linux';
-            document.getElementById('load-average').textContent = data.load_average || '0.00 0.00 0.00';
-            document.getElementById('processes').textContent = data.process_count || '0';
-            
-            // Update memory usage
-            if (data.memory_usage !== undefined) {
-                const memPercent = Math.round(data.memory_usage);
-                document.getElementById('memory-percent').textContent = memPercent + '%';
-                document.getElementById('memory-bar').style.width = memPercent + '%';
-            }
-            
-            // Update disk usage
-            if (data.disk_usage !== undefined) {
-                const diskPercent = Math.round(data.disk_usage);
-                document.getElementById('disk-percent').textContent = diskPercent + '%';
-                document.getElementById('disk-bar').style.width = diskPercent + '%';
-            }
-            
-            // Update temperature
-            if (data.temperature !== undefined) {
-                document.getElementById('temperature').textContent = Math.round(data.temperature) + '°C';
-            }
-            
-            // Update uptime
-            document.getElementById('system-uptime').value = data.uptime || 'Unknown';
-            
-            // Calculate last boot time
-            if (data.uptime) {
-                const uptimeSeconds = parseFloat(data.uptime.split(' ')[0]);
-                const bootTime = new Date(Date.now() - (uptimeSeconds * 1000));
-                document.getElementById('last-boot').value = bootTime.toLocaleString();
-            }
-        })
-        .catch(error => {
-            console.error('Error loading system status:', error);
-        });
-}
-
-// Load timezone list
-function loadTimezones() {
-    const select = document.getElementById('timezone-select');
-    const timezones = Intl.supportedValuesOf('timeZone');
-    
-    select.innerHTML = '';
-    timezones.forEach(tz => {
-        const option = document.createElement('option');
-        option.value = tz;
-        option.textContent = tz;
-        select.appendChild(option);
-    });
-    
-    // Set current timezone
-    const currentTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    select.value = currentTz;
-}
-
-function syncTime() {
-    fetch('/api/system/sync-time', {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert('Error: ' + result.error);
-        } else {
-            alert('Time synchronized successfully');
-        }
-    })
-    .catch(error => alert('Error syncing time: ' + error));
-}
-
-function createBackup() {
-    const button = event.target;
-    button.disabled = true;
-    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Creating...';
-    
-    fetch('/system/backup', {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert('Error: ' + result.error);
-        } else {
-            // Download the backup file
-            const a = document.createElement('a');
-            a.href = result.backupPath;
-            a.download = result.backupPath.split('/').pop();
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            alert('Backup created successfully');
-        }
-    })
-    .catch(error => alert('Error creating backup: ' + error))
-    .finally(() => {
-        button.disabled = false;
-        button.innerHTML = 'Create Backup';
-    });
-}
-
-// Handle general settings form
-document.getElementById('general-settings-form').addEventListener('submit', function(e) {
+// Change password form
+document.getElementById('changePasswordForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
-    const data = Object.fromEntries(formData.entries());
-    data.ntp_enabled = formData.get('ntp_enabled') === 'on';
+    const data = {};
     
-    fetch('/api/system/settings', {
+    for (let [key, value] of formData.entries()) {
+        data[key] = value;
+    }
+    
+    // Validate password confirmation
+    if (data.new_password !== data.confirm_password) {
+        showAlert('Error', 'New passwords do not match', 'danger');
+        return;
+    }
+    
+    fetch('/change-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify(data)
     })
     .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert('Error: ' + result.error);
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
         } else {
-            alert('Settings saved successfully');
+            showAlert('Success', 'Password changed successfully', 'success');
+            this.reset();
+            
+            // Remove password alert if it exists
+            const alert = document.querySelector('.alert-warning');
+            if (alert) {
+                alert.remove();
+            }
         }
     })
-    .catch(error => alert('Error saving settings: ' + error));
+    .catch(error => {
+        showAlert('Error', 'Failed to change password', 'danger');
+        console.error('Error:', error);
+    });
 });
 
-// Handle restore form
-document.getElementById('restore-form').addEventListener('submit', function(e) {
+// Time configuration form
+document.getElementById('timeConfigForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
-    if (!confirm('Are you sure you want to restore from backup? This will overwrite current settings.')) {
+    const formData = new FormData(this);
+    const data = {};
+    
+    for (let [key, value] of formData.entries()) {
+        if (key === 'ntp_enabled') {
+            data[key] = this.elements[key].checked;
+        } else if (key === 'ntp_servers') {
+            data[key] = value.split('\n').filter(s => s.trim());
+        } else {
+            data[key] = value;
+        }
+    }
+    
+    fetch('/system/api/time', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', 'Time settings saved successfully', 'success');
+            loadSystemTime();
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to save time settings', 'danger');
+        console.error('Error:', error);
+    });
+});
+
+// Restore backup form
+document.getElementById('restoreBackupForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (!confirm('Are you sure you want to restore from backup? This will restart the system and may take several minutes.')) {
         return;
     }
     
     const formData = new FormData(this);
     
-    fetch('/system/restore', {
+    fetch('/system/api/restore', {
         method: 'POST',
         body: formData
     })
     .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert('Error: ' + result.error);
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
         } else {
-            alert('Backup restored successfully. The system may need to restart.');
+            showAlert('Success', 'Backup restoration started. System will restart...', 'success');
         }
     })
-    .catch(error => alert('Error restoring backup: ' + error));
+    .catch(error => {
+        showAlert('Error', 'Failed to restore backup', 'danger');
+        console.error('Error:', error);
+    });
 });
 
-// Initialize page
-document.addEventListener('DOMContentLoaded', function() {
-    updateTime();
+function createBackup() {
+    if (!confirm('Create a backup of current system configuration?')) {
+        return;
+    }
+    
+    showAlert('Info', 'Creating backup...', 'info');
+    
+    fetch('/system/api/backup', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', 'Backup created successfully', 'success');
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.href = data.path;
+            link.download = `router_backup_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.tar.gz`;
+            link.click();
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to create backup', 'danger');
+        console.error('Error:', error);
+    });
+}
+
+function restartSystem() {
+    if (!confirm('Are you sure you want to restart the system? This will disconnect all users.')) {
+        return;
+    }
+    
+    fetch('/system/api/restart', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Info', 'System is restarting... Please wait.', 'info');
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to restart system', 'danger');
+        console.error('Error:', error);
+    });
+}
+
+function shutdownSystem() {
+    if (!confirm('Are you sure you want to shutdown the system? You will need physical access to restart it.')) {
+        return;
+    }
+    
+    fetch('/system/api/shutdown', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Info', 'System is shutting down...', 'info');
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to shutdown system', 'danger');
+        console.error('Error:', error);
+    });
+}
+
+function refreshSystemStatus() {
     loadSystemStatus();
-    loadTimezones();
+    loadSystemTime();
+}
+
+function loadSystemStatus() {
+    if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+        window.ws.send(JSON.stringify({
+            type: 'get_system_info'
+        }));
+    }
+}
+
+function loadSystemTime() {
+    fetch('/system/api/time')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('current-time').value = data.current_time || '';
+            
+            const timezoneSelect = document.querySelector('select[name="timezone"]');
+            if (timezoneSelect && data.timezone) {
+                timezoneSelect.value = data.timezone;
+            }
+            
+            const ntpCheckbox = document.querySelector('input[name="ntp_enabled"]');
+            if (ntpCheckbox) {
+                ntpCheckbox.checked = data.ntp_enabled || false;
+            }
+            
+            if (data.ntp_servers) {
+                const serversTextarea = document.querySelector('textarea[name="ntp_servers"]');
+                if (serversTextarea) {
+                    serversTextarea.value = data.ntp_servers.join('\n');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error loading system time:', error);
+        });
+}
+
+function updateSystemStatus(data) {
+    if (data.cpu) {
+        // Update system load
+        const loadValue = data.system_load ? parseFloat(data.system_load.load_1m) : 0;
+        document.getElementById('system-load').textContent = loadValue.toFixed(2);
+        document.getElementById('load-1m').textContent = data.system_load ? data.system_load.load_1m : '-';
+        document.getElementById('load-5m').textContent = data.system_load ? data.system_load.load_5m : '-';
+        document.getElementById('load-avg').textContent = data.system_load ? data.system_load.load_1m : '-';
+        
+        // Update load indicator
+        const loadIndicator = document.getElementById('system-load-indicator');
+        if (loadValue < 1.0) {
+            loadIndicator.className = 'status-indicator status-green';
+        } else if (loadValue < 2.0) {
+            loadIndicator.className = 'status-indicator status-yellow';
+        } else {
+            loadIndicator.className = 'status-indicator status-red';
+        }
+    }
     
-    // Update time every second
-    setInterval(updateTime, 1000);
+    if (data.memory) {
+        const usedPercent = ((data.memory.used / data.memory.total) * 100).toFixed(1);
+        document.getElementById('memory-usage').textContent = usedPercent + '%';
+        document.getElementById('memory-total').textContent = formatBytes(data.memory.total);
+        document.getElementById('memory-available').textContent = formatBytes(data.memory.available);
+        
+        // Update memory indicator
+        const memoryIndicator = document.getElementById('memory-indicator');
+        if (usedPercent < 70) {
+            memoryIndicator.className = 'status-indicator status-green';
+        } else if (usedPercent < 90) {
+            memoryIndicator.className = 'status-indicator status-yellow';
+        } else {
+            memoryIndicator.className = 'status-indicator status-red';
+        }
+    }
     
-    // Update system status every 30 seconds
-    setInterval(loadSystemStatus, 30000);
+    if (data.storage && data.storage.devices && data.storage.devices.length > 0) {
+        const rootDevice = data.storage.devices.find(d => d.mount_point === '/') || data.storage.devices[0];
+        if (rootDevice) {
+            const usedPercent = ((rootDevice.used / rootDevice.size) * 100).toFixed(1);
+            document.getElementById('storage-usage').textContent = usedPercent + '%';
+            document.getElementById('storage-total').textContent = formatBytes(rootDevice.size);
+            document.getElementById('storage-available').textContent = formatBytes(rootDevice.available);
+            
+            // Update storage indicator
+            const storageIndicator = document.getElementById('storage-indicator');
+            if (usedPercent < 80) {
+                storageIndicator.className = 'status-indicator status-green';
+            } else if (usedPercent < 95) {
+                storageIndicator.className = 'status-indicator status-yellow';
+            } else {
+                storageIndicator.className = 'status-indicator status-red';
+            }
+        }
+    }
+    
+    if (data.system_load) {
+        document.getElementById('system-uptime').textContent = data.system_load.uptime || 'Unknown';
+        document.getElementById('process-count').textContent = data.system_load.process_count || '-';
+    }
+}
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Load initial data
+document.addEventListener('DOMContentLoaded', function() {
+    loadSystemStatus();
+    loadSystemTime();
+    
+    // Update current time every second
+    setInterval(() => {
+        document.getElementById('current-time').value = new Date().toLocaleString();
+    }, 1000);
 });
 </script>
 {{end}}
-{{template "base/layout.html" .}}
+
+{{template "layout.html" .}}

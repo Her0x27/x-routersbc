@@ -9,22 +9,23 @@ import (
 
 func main() {
 	// Initialize database
-	if err := core.InitDatabase(); err != nil {
+	db, err := core.InitDatabase()
+	if err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
+	defer db.Close()
 
-	// Create and configure server
-	server := core.NewServer()
+	// Initialize server
+	server := core.NewServer(db)
 	
-	// Get port from environment or use default
+	// Start server on port 5000
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "5000"
 	}
-
-	// Start server
-	log.Printf("Starting RouterSBC server on port %s", port)
+	
+	log.Printf("Starting router SBC management interface on port %s", port)
 	if err := server.Start("0.0.0.0:" + port); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+		log.Fatalf("Failed to start server: %v", err)
 	}
 }

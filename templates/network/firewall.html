@@ -1,5 +1,4 @@
 {{define "content"}}
-<!-- Page header -->
 <div class="page-header d-print-none">
     <div class="container-xl">
         <div class="row g-2 align-items-center">
@@ -10,156 +9,336 @@
                         <li class="breadcrumb-item active" aria-current="page">Firewall</li>
                     </ol>
                 </nav>
-                <h2 class="page-title">
-                    Firewall Configuration
-                </h2>
+                <h2 class="page-title">Firewall Configuration</h2>
+                <div class="text-muted mt-1">Manage firewall rules and security policies</div>
             </div>
             <div class="col-auto ms-auto d-print-none">
                 <div class="btn-list">
-                    <button type="button" class="btn btn-outline-secondary" onclick="flushRules()">
+                    <a href="#" class="btn btn-outline-secondary" onclick="refreshFirewallStatus()">
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                             <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/>
                             <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>
                         </svg>
-                        Flush Rules
-                    </button>
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#firewall-rule-modal">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                            <line x1="12" y1="5" x2="12" y2="19"/>
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        Add Rule
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- Page body -->
-<div class="page-body">
-    <div class="container-xl">
-        <!-- Backend Selection -->
-        <div class="card mb-3">
-            <div class="card-header">
-                <h3 class="card-title">Firewall Settings</h3>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <label class="form-label">Firewall Backend</label>
-                        <select class="form-select" id="firewall-backend" onchange="switchFirewallBackend()">
-                            <option value="iptables" {{if eq .config.Backend "iptables"}}selected{{end}}>IPTables (Classic)</option>
-                            <option value="nftables" {{if eq .config.Backend "nftables"}}selected{{end}}>NFTables (Modern)</option>
-                        </select>
-                        <small class="form-hint">Select the firewall backend to use. NFTables is the modern replacement for IPTables.</small>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Current Status</label>
-                        <div class="d-flex align-items-center">
-                            <span class="status status-green me-2">
-                                <span class="status-dot status-dot-animated"></span>
-                                Active
-                            </span>
-                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="reloadFirewall()">Reload</button>
+                        Refresh
+                    </a>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3"/>
+                                <path d="M9 12l2 2l4 -4"/>
+                            </svg>
+                            Firewall Actions
+                        </button>
+                        <div class="dropdown-menu">
+                            <a class="dropdown-item" href="#" onclick="enableFirewall()">Enable Firewall</a>
+                            <a class="dropdown-item" href="#" onclick="disableFirewall()">Disable Firewall</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item" href="#" onclick="saveFirewallConfig()">Save Configuration</a>
+                            <a class="dropdown-item" href="#" onclick="loadFirewallConfig()">Load Configuration</a>
+                            <div class="dropdown-divider"></div>
+                            <a class="dropdown-item text-danger" href="#" onclick="flushAllRules()">Flush All Rules</a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <!-- Dynamic content based on backend -->
-        <div id="firewall-content">
-            {{if eq .config.Backend "nftables"}}
-                {{template "network/firewall_new.html" .}}
+    </div>
+</div>
+
+<div class="page-body">
+    <div class="container-xl">
+        <!-- Firewall Status -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Firewall Status</h3>
+                        <div class="card-actions">
+                            <span class="status-indicator status-green" id="firewallStatusIndicator"></span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-3">
+                                <div class="text-muted">Status</div>
+                                <div class="h3" id="firewallStatus">{{.FirewallConfig.Status}}</div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="text-muted">Backend</div>
+                                <div class="h3" id="firewallBackend">{{.FirewallConfig.Backend}}</div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="text-muted">Active Rules</div>
+                                <div class="h3" id="activeRules">{{len .FirewallConfig.Rules}}</div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="text-muted">Default Policy</div>
+                                <div class="h3" id="defaultPolicy">ACCEPT</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backend Selection -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Firewall Settings</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="firewallSettingsForm">
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Firewall Backend</label>
+                                        <select class="form-select" name="firewall_backend" onchange="switchFirewallBackend()">
+                                            <option value="nftables" {{if eq .FirewallConfig.Backend "nftables"}}selected{{end}}>NFTables (Recommended)</option>
+                                            <option value="iptables" {{if eq .FirewallConfig.Backend "iptables"}}selected{{end}}>IPTables (Legacy)</option>
+                                        </select>
+                                        <small class="form-hint">Choose the firewall implementation to use</small>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Default Policy</label>
+                                        <select class="form-select" name="default_policy">
+                                            <option value="accept">ACCEPT (Allow all by default)</option>
+                                            <option value="drop">DROP (Block all by default)</option>
+                                            <option value="reject">REJECT (Block with response)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="log_dropped_packets">
+                                            <span class="form-check-label">Log dropped packets</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="syn_flood_protection" checked>
+                                            <span class="form-check-label">SYN flood protection</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-footer">
+                                <button type="submit" class="btn btn-primary">Save Settings</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dynamic Firewall Content -->
+        <div id="firewallContent">
+            {{if eq .FirewallConfig.Backend "nftables"}}
+                {{template "firewall_new.html" .}}
             {{else}}
-                {{template "network/firewall_classic.html" .}}
+                {{template "firewall_classic.html" .}}
             {{end}}
         </div>
     </div>
 </div>
 
 <script>
+function refreshFirewallStatus() {
+    fetch('/network/api/firewall/status')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('firewallStatus').textContent = data.status || 'Unknown';
+            document.getElementById('firewallBackend').textContent = data.backend || 'Unknown';
+            document.getElementById('activeRules').textContent = data.rule_count || '0';
+            
+            const statusIndicator = document.getElementById('firewallStatusIndicator');
+            if (data.status === 'active') {
+                statusIndicator.className = 'status-indicator status-green';
+            } else {
+                statusIndicator.className = 'status-indicator status-red';
+            }
+        })
+        .catch(error => {
+            console.error('Error refreshing firewall status:', error);
+        });
+}
+
 function switchFirewallBackend() {
-    const backend = document.getElementById('firewall-backend').value;
+    const backend = document.querySelector('select[name="firewall_backend"]').value;
     
-    if (confirm(`Are you sure you want to switch to ${backend}? This will reload the firewall configuration.`)) {
-        fetch('/api/network/firewall/backend', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ backend: backend })
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.error) {
-                alert('Error: ' + result.error);
-            } else {
-                location.reload();
-            }
-        })
-        .catch(error => alert('Error switching backend: ' + error));
+    if (!confirm(`Are you sure you want to switch to ${backend}? This will reload the firewall configuration.`)) {
+        return;
     }
+    
+    fetch('/network/api/firewall/backend', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ backend: backend })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', 'Firewall backend changed successfully', 'success');
+            // Reload the page to show the appropriate interface
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to change firewall backend', 'danger');
+        console.error('Error:', error);
+    });
 }
 
-function flushRules() {
-    if (confirm('Are you sure you want to flush all firewall rules? This will remove ALL rules and may affect connectivity.')) {
-        fetch('/api/network/firewall/flush', {
-            method: 'POST'
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.error) {
-                alert('Error: ' + result.error);
-            } else {
-                alert('Firewall rules flushed successfully');
-                location.reload();
-            }
-        })
-        .catch(error => alert('Error flushing rules: ' + error));
+function enableFirewall() {
+    if (!confirm('Are you sure you want to enable the firewall? Make sure you have appropriate rules configured.')) {
+        return;
     }
-}
-
-function reloadFirewall() {
-    fetch('/api/network/firewall/reload', {
+    
+    fetch('/network/api/firewall/enable', {
         method: 'POST'
     })
     .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert('Error: ' + result.error);
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
         } else {
-            alert('Firewall reloaded successfully');
-            location.reload();
+            showAlert('Success', 'Firewall enabled successfully', 'success');
+            refreshFirewallStatus();
         }
     })
-    .catch(error => alert('Error reloading firewall: ' + error));
+    .catch(error => {
+        showAlert('Error', 'Failed to enable firewall', 'danger');
+        console.error('Error:', error);
+    });
 }
 
-// Handle firewall rule form submission
-document.getElementById('firewall-rule-form').addEventListener('submit', function(e) {
+function disableFirewall() {
+    if (!confirm('Are you sure you want to disable the firewall? This will remove all protection.')) {
+        return;
+    }
+    
+    fetch('/network/api/firewall/disable', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', 'Firewall disabled successfully', 'success');
+            refreshFirewallStatus();
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to disable firewall', 'danger');
+        console.error('Error:', error);
+    });
+}
+
+function flushAllRules() {
+    if (!confirm('Are you sure you want to flush all firewall rules? This cannot be undone and may lock you out!')) {
+        return;
+    }
+    
+    fetch('/network/api/firewall/flush', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Warning', 'All firewall rules have been flushed', 'warning');
+            refreshFirewallStatus();
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to flush firewall rules', 'danger');
+        console.error('Error:', error);
+    });
+}
+
+function saveFirewallConfig() {
+    fetch('/network/api/firewall/save', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', 'Firewall configuration saved successfully', 'success');
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to save firewall configuration', 'danger');
+        console.error('Error:', error);
+    });
+}
+
+function loadFirewallConfig() {
+    // This would open a file upload dialog or restore from backup
+    showAlert('Info', 'Firewall configuration loading feature coming soon', 'info');
+}
+
+// Firewall settings form
+document.getElementById('firewallSettingsForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
-    const data = Object.fromEntries(formData.entries());
-    data.enabled = formData.get('enabled') === 'on';
+    const data = {};
     
-    fetch('/api/network/firewall/rules', {
+    for (let [key, value] of formData.entries()) {
+        if (this.elements[key].type === 'checkbox') {
+            data[key] = this.elements[key].checked;
+        } else {
+            data[key] = value;
+        }
+    }
+    
+    fetch('/network/api/firewall/settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify(data)
     })
     .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert('Error: ' + result.error);
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
         } else {
-            bootstrap.Modal.getInstance(document.getElementById('firewall-rule-modal')).hide();
-            location.reload();
+            showAlert('Success', 'Firewall settings saved successfully', 'success');
+            refreshFirewallStatus();
         }
     })
-    .catch(error => alert('Error saving firewall rule: ' + error));
+    .catch(error => {
+        showAlert('Error', 'Failed to save firewall settings', 'danger');
+        console.error('Error:', error);
+    });
+});
+
+// Load initial status
+document.addEventListener('DOMContentLoaded', function() {
+    refreshFirewallStatus();
 });
 </script>
 {{end}}
-{{template "base/layout.html" .}}
+
+{{template "layout.html" .}}

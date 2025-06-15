@@ -1,5 +1,4 @@
 {{define "content"}}
-<!-- Page header -->
 <div class="page-header d-print-none">
     <div class="container-xl">
         <div class="row g-2 align-items-center">
@@ -10,311 +9,420 @@
                         <li class="breadcrumb-item active" aria-current="page">LAN</li>
                     </ol>
                 </nav>
-                <h2 class="page-title">
-                    LAN Configuration
-                </h2>
+                <h2 class="page-title">LAN Configuration</h2>
+                <div class="text-muted mt-1">Configure DHCP server, DNS settings, and bridge configuration</div>
+            </div>
+            <div class="col-auto ms-auto d-print-none">
+                <div class="btn-list">
+                    <a href="#" class="btn btn-outline-secondary" onclick="refreshLANStatus()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/>
+                            <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>
+                        </svg>
+                        Refresh Status
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
-<!-- Page body -->
+
 <div class="page-body">
     <div class="container-xl">
-        <!-- Tabs -->
+        <!-- LAN Status -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Current LAN Status</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-3">
+                                <div class="text-muted">LAN IP Address</div>
+                                <div class="h3" id="lanIPAddress">{{if .LANConfig.Config.ip}}{{.LANConfig.Config.ip}}{{else}}192.168.1.1{{end}}</div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="text-muted">DHCP Status</div>
+                                <div class="h3">
+                                    {{if .LANConfig.DHCPEnabled}}
+                                    <span class="badge bg-success">Enabled</span>
+                                    {{else}}
+                                    <span class="badge bg-secondary">Disabled</span>
+                                    {{end}}
+                                </div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="text-muted">DNS Mode</div>
+                                <div class="h3" id="dnsMode">{{.LANConfig.DNSMode}}</div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="text-muted">Active Clients</div>
+                                <div class="h3" id="activeClients">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LAN Configuration Tabs -->
         <div class="card">
             <div class="card-header">
-                <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <a href="#tabs-dhcp" class="nav-link active" data-bs-toggle="tab" aria-selected="true" role="tab">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M3 17h18l-2 -4h-14z"/>
-                                <path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-2"/>
-                                <path d="M12 13v4"/>
-                                <path d="M12 5v8"/>
-                                <path d="M9 8l3 -3l3 3"/>
-                            </svg>
-                            DHCP
-                        </a>
+                <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs">
+                    <li class="nav-item">
+                        <a href="#tabs-dhcp" class="nav-link active" data-bs-toggle="tab">DHCP Server</a>
                     </li>
-                    <li class="nav-item" role="presentation">
-                        <a href="#tabs-dns" class="nav-link" data-bs-toggle="tab" aria-selected="false" role="tab" tabindex="-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M6 9a6 6 0 1 0 12 0a6 6 0 0 0 -12 0"/>
-                                <path d="M12 3c1.333 .333 2 2.333 2 6s-.667 5.667 -2 6"/>
-                                <path d="M12 3c-1.333 .333 -2 2.333 -2 6s.667 5.667 2 6"/>
-                                <path d="M6 9h12"/>
-                                <path d="M3 20h7l-1 -1"/>
-                                <path d="M21 20h-7l1 -1"/>
-                            </svg>
-                            DNS
-                        </a>
+                    <li class="nav-item">
+                        <a href="#tabs-dns" class="nav-link" data-bs-toggle="tab">DNS Settings</a>
                     </li>
-                    <li class="nav-item" role="presentation">
-                        <a href="#tabs-bridge" class="nav-link" data-bs-toggle="tab" aria-selected="false" role="tab" tabindex="-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M6 12h12"/>
-                                <path d="M12 6v12"/>
-                                <path d="M3 12h3"/>
-                                <path d="M18 12h3"/>
-                                <path d="M12 3v3"/>
-                                <path d="M12 18v3"/>
-                            </svg>
-                            Bridge Settings
-                        </a>
+                    <li class="nav-item">
+                        <a href="#tabs-bridge" class="nav-link" data-bs-toggle="tab">Bridge Settings</a>
                     </li>
                 </ul>
             </div>
             <div class="card-body">
                 <div class="tab-content">
-                    <!-- DHCP Tab -->
-                    <div class="tab-pane active show" id="tabs-dhcp" role="tabpanel">
-                        <form id="dhcp-form">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">LAN Interface</label>
-                                    <select class="form-select" name="interface">
-                                        <option value="br0" {{if eq .config.Interface "br0"}}selected{{end}}>br0 (Bridge)</option>
-                                        <option value="eth1" {{if eq .config.Interface "eth1"}}selected{{end}}>eth1 (Ethernet)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">DHCP Mode</label>
-                                    <select class="form-select" name="dhcp_mode" id="dhcp-mode">
-                                        <option value="server" {{if eq .config.DHCP "server"}}selected{{end}}>DHCP Server</option>
-                                        <option value="relay" {{if eq .config.DHCP "relay"}}selected{{end}}>DHCP Relay</option>
-                                        <option value="disabled" {{if eq .config.DHCP "disabled"}}selected{{end}}>Disabled</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">LAN IP Address</label>
-                                    <input type="text" class="form-control" name="ip_address" value="{{.config.IPAddress}}" placeholder="192.168.1.1">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Subnet Mask</label>
-                                    <input type="text" class="form-control" name="netmask" value="{{.config.Netmask}}" placeholder="255.255.255.0">
-                                </div>
-                            </div>
-                            
-                            <div id="dhcp-server-config" class="{{if ne .config.DHCP "server"}}d-none{{end}}">
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">DHCP Range Start</label>
-                                        <input type="text" class="form-control" name="dhcp_start" value="{{.config.DHCPStart}}" placeholder="192.168.1.100">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">DHCP Range End</label>
-                                        <input type="text" class="form-control" name="dhcp_end" value="{{.config.DHCPEnd}}" placeholder="192.168.1.200">
-                                    </div>
-                                </div>
-                                
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Lease Time</label>
-                                        <select class="form-select" name="lease_time">
-                                            <option value="1h" {{if eq .config.LeaseTime "1h"}}selected{{end}}>1 Hour</option>
-                                            <option value="12h" {{if eq .config.LeaseTime "12h"}}selected{{end}}>12 Hours</option>
-                                            <option value="24h" {{if eq .config.LeaseTime "24h"}}selected{{end}}>24 Hours</option>
-                                            <option value="7d" {{if eq .config.LeaseTime "7d"}}selected{{end}}>7 Days</option>
+                    <!-- DHCP Configuration -->
+                    <div class="tab-pane active show" id="tabs-dhcp">
+                        <form id="dhcpConfigForm">
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">DHCP Mode</label>
+                                        <select class="form-select" name="dhcp_mode" required>
+                                            <option value="disabled" {{if not .LANConfig.DHCPEnabled}}selected{{end}}>Disabled</option>
+                                            <option value="server" {{if and .LANConfig.DHCPEnabled (eq .LANConfig.DHCPMode "server")}}selected{{end}}>DHCP Server</option>
+                                            <option value="relay" {{if and .LANConfig.DHCPEnabled (eq .LANConfig.DHCPMode "relay")}}selected{{end}}>DHCP Relay</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Default Gateway</label>
-                                        <input type="text" class="form-control" name="default_gateway" value="{{.config.IPAddress}}" placeholder="192.168.1.1">
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">LAN Interface</label>
+                                        <select class="form-select" name="lan_interface">
+                                            <option value="br0">br0 (Bridge)</option>
+                                            <option value="eth0">eth0</option>
+                                            <option value="eth1">eth1</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div id="dhcp-relay-config" class="{{if ne .config.DHCP "relay"}}d-none{{end}}">
-                                <div class="row mb-3">
-                                    <div class="col-md-12">
-                                        <label class="form-label">DHCP Server IP</label>
-                                        <input type="text" class="form-control" name="dhcp_server_ip" placeholder="192.168.0.1">
-                                        <small class="form-hint">IP address of the DHCP server to relay requests to</small>
+
+                            <div id="dhcpServerConfig">
+                                <h4>DHCP Server Configuration</h4>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">IP Range Start</label>
+                                            <input type="text" class="form-control" name="dhcp_start" placeholder="192.168.1.100" value="{{if .LANConfig.Config.dhcp.range_start}}{{.LANConfig.Config.dhcp.range_start}}{{end}}">
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">IP Range End</label>
+                                            <input type="text" class="form-control" name="dhcp_end" placeholder="192.168.1.200" value="{{if .LANConfig.Config.dhcp.range_end}}{{.LANConfig.Config.dhcp.range_end}}{{end}}">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Subnet Mask</label>
+                                            <input type="text" class="form-control" name="dhcp_netmask" placeholder="255.255.255.0" value="{{if .LANConfig.Config.dhcp.netmask}}{{.LANConfig.Config.dhcp.netmask}}{{else}}255.255.255.0{{end}}">
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Gateway</label>
+                                            <input type="text" class="form-control" name="dhcp_gateway" placeholder="192.168.1.1" value="{{if .LANConfig.Config.dhcp.gateway}}{{.LANConfig.Config.dhcp.gateway}}{{end}}">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Lease Time</label>
+                                            <select class="form-select" name="lease_time">
+                                                <option value="3600">1 Hour</option>
+                                                <option value="21600">6 Hours</option>
+                                                <option value="43200">12 Hours</option>
+                                                <option value="86400" selected>24 Hours</option>
+                                                <option value="604800">7 Days</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">DNS Servers</label>
+                                            <input type="text" class="form-control" name="dhcp_dns" placeholder="8.8.8.8, 8.8.4.4" value="{{if .LANConfig.Config.dhcp.dns}}{{range $i, $dns := .LANConfig.Config.dhcp.dns}}{{if $i}}, {{end}}{{$dns}}{{end}}{{end}}">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            
+
+                            <div id="dhcpRelayConfig" style="display: none;">
+                                <h4>DHCP Relay Configuration</h4>
+                                <div class="mb-3">
+                                    <label class="form-label">DHCP Server IP</label>
+                                    <input type="text" class="form-control" name="relay_server" placeholder="192.168.0.1">
+                                    <small class="form-hint">IP address of the DHCP server to relay requests to</small>
+                                </div>
+                            </div>
+
                             <div class="form-footer">
                                 <button type="submit" class="btn btn-primary">Save DHCP Configuration</button>
                             </div>
                         </form>
+
+                        <!-- DHCP Leases -->
+                        <div class="mt-4">
+                            <h4>Active DHCP Leases</h4>
+                            <div class="table-responsive">
+                                <table class="table table-vcenter">
+                                    <thead>
+                                        <tr>
+                                            <th>IP Address</th>
+                                            <th>MAC Address</th>
+                                            <th>Hostname</th>
+                                            <th>Expires</th>
+                                            <th class="w-1">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dhcpLeasesTable">
+                                        <!-- Will be populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Static DHCP Reservations -->
+                        <div class="mt-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4>Static DHCP Reservations</h4>
+                                <button type="button" class="btn btn-primary" onclick="addStaticReservation()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <line x1="12" y1="5" x2="12" y2="19"/>
+                                        <line x1="5" y1="12" x2="19" y2="12"/>
+                                    </svg>
+                                    Add Reservation
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-vcenter">
+                                    <thead>
+                                        <tr>
+                                            <th>MAC Address</th>
+                                            <th>IP Address</th>
+                                            <th>Hostname</th>
+                                            <th class="w-1">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="staticReservationsTable">
+                                        <!-- Will be populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <!-- DNS Tab -->
-                    <div class="tab-pane" id="tabs-dns" role="tabpanel">
-                        <form id="dns-form">
-                            <div class="row mb-3">
-                                <div class="col-md-12">
-                                    <label class="form-label">DNS Mode</label>
-                                    <select class="form-select" name="dns_mode" id="dns-mode">
-                                        <option value="direct" {{if eq .config.DNS "direct"}}selected{{end}}>Direct ISP</option>
-                                        <option value="proxy" {{if eq .config.DNS "proxy"}}selected{{end}}>DNS Proxy</option>
-                                        <option value="forward" {{if eq .config.DNS "forward"}}selected{{end}}>DNS Forward</option>
-                                        <option value="server" {{if eq .config.DNS "server"}}selected{{end}}>DNS Server</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Primary DNS Server</label>
-                                    <input type="text" class="form-control" name="dns1" value="{{index .config.DNSServers 0}}" placeholder="8.8.8.8">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Secondary DNS Server</label>
-                                    <input type="text" class="form-control" name="dns2" value="{{index .config.DNSServers 1}}" placeholder="8.8.4.4">
-                                </div>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-12">
-                                    <label class="form-label">DNS Security</label>
-                                    <select class="form-select" name="dns_security">
-                                        <option value="none">No secure DNS</option>
-                                        <option value="dot">DNS over TLS (DoT)</option>
-                                        <option value="doh">DNS over HTTPS (DoH)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <!-- Local DNS Zones -->
-                            <div class="row mb-3">
-                                <div class="col-md-12">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <label class="form-label mb-0">Local DNS Zones</label>
-                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addDNSZone()">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                                <line x1="12" y1="5" x2="12" y2="19"/>
-                                                <line x1="5" y1="12" x2="19" y2="12"/>
-                                            </svg>
-                                            Add Zone
-                                        </button>
+
+                    <!-- DNS Configuration -->
+                    <div class="tab-pane" id="tabs-dns">
+                        <form id="dnsConfigForm">
+                            <div class="row">
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">DNS Mode</label>
+                                        <select class="form-select" name="dns_mode" required>
+                                            <option value="direct" {{if eq .LANConfig.DNSMode "direct"}}selected{{end}}>Direct ISP</option>
+                                            <option value="proxy" {{if eq .LANConfig.DNSMode "proxy"}}selected{{end}}>DNS Proxy</option>
+                                            <option value="forward" {{if eq .LANConfig.DNSMode "forward"}}selected{{end}}>DNS Forwarder</option>
+                                            <option value="server" {{if eq .LANConfig.DNSMode "server"}}selected{{end}}>DNS Server</option>
+                                        </select>
                                     </div>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th>Domain</th>
-                                                    <th>Type</th>
-                                                    <th>Value</th>
-                                                    <th class="w-1">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="dns-zones">
-                                                {{range .config.LocalZones}}
-                                                <tr>
-                                                    <td>{{.Domain}}</td>
-                                                    <td>{{.Type}}</td>
-                                                    <td>{{.Value}}</td>
-                                                    <td>
-                                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeDNSZone(this)">Remove</button>
-                                                    </td>
-                                                </tr>
-                                                {{end}}
-                                            </tbody>
-                                        </table>
+                                </div>
+                                <div class="col-lg-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">DNS Security</label>
+                                        <select class="form-select" name="dns_security">
+                                            <option value="none">No Secure DNS</option>
+                                            <option value="dot">DNS over TLS (DoT)</option>
+                                            <option value="doh">DNS over HTTPS (DoH)</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <!-- DNS Routing -->
-                            <div class="row mb-3">
-                                <div class="col-md-12">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <label class="form-label mb-0">DNS Routing Rules</label>
-                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addDNSRoute()">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                                <line x1="12" y1="5" x2="12" y2="19"/>
-                                                <line x1="5" y1="12" x2="19" y2="12"/>
-                                            </svg>
-                                            Add Route
-                                        </button>
-                                    </div>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm">
-                                            <thead>
-                                                <tr>
-                                                    <th>Pattern</th>
-                                                    <th>Type</th>
-                                                    <th>Target</th>
-                                                    <th class="w-1">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="dns-routes">
-                                                <tr>
-                                                    <td colspan="4" class="text-center text-muted">No DNS routing rules configured</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Upstream DNS Servers</label>
+                                <textarea class="form-control" name="dns_servers" rows="3" placeholder="8.8.8.8&#10;8.8.4.4&#10;1.1.1.1">{{if .LANConfig.Config.dns.servers}}{{range .LANConfig.Config.dns.servers}}{{.}}
+{{end}}{{end}}</textarea>
+                                <small class="form-hint">One server per line. Supports IP addresses and DoH/DoT URLs</small>
                             </div>
-                            
+
                             <div class="form-footer">
                                 <button type="submit" class="btn btn-primary">Save DNS Configuration</button>
                             </div>
                         </form>
+
+                        <!-- DNS Local Zones -->
+                        <div class="mt-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4>Local DNS Zones</h4>
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#dnsZoneModal">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <line x1="12" y1="5" x2="12" y2="19"/>
+                                        <line x1="5" y1="12" x2="19" y2="12"/>
+                                    </svg>
+                                    Add Zone
+                                </button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-vcenter">
+                                    <thead>
+                                        <tr>
+                                            <th>Zone/Domain</th>
+                                            <th>Type</th>
+                                            <th>Value</th>
+                                            <th>Status</th>
+                                            <th class="w-1">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dnsZonesTable">
+                                        <!-- Default local zone -->
+                                        <tr>
+                                            <td><code>router.local</code></td>
+                                            <td><span class="badge bg-blue">A</span></td>
+                                            <td>192.168.1.1</td>
+                                            <td><span class="badge bg-success">Enabled</span></td>
+                                            <td>
+                                                <div class="btn-list flex-nowrap">
+                                                    <a href="#" class="btn btn-sm btn-outline-primary">Edit</a>
+                                                    <a href="#" class="btn btn-sm btn-outline-danger">Delete</a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- DNS Routing -->
+                        <div class="mt-4">
+                            <h4>DNS Geo Routing</h4>
+                            <div class="table-responsive">
+                                <table class="table table-vcenter">
+                                    <thead>
+                                        <tr>
+                                            <th>Domain/Zone</th>
+                                            <th>Target</th>
+                                            <th>Action</th>
+                                            <th>Status</th>
+                                            <th class="w-1">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>*.ru</code></td>
+                                            <td>Direct</td>
+                                            <td><span class="badge bg-green">Allow</span></td>
+                                            <td><span class="badge bg-success">Enabled</span></td>
+                                            <td>
+                                                <div class="btn-list flex-nowrap">
+                                                    <a href="#" class="btn btn-sm btn-outline-primary">Edit</a>
+                                                    <a href="#" class="btn btn-sm btn-outline-danger">Delete</a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <!-- Bridge Settings Tab -->
-                    <div class="tab-pane" id="tabs-bridge" role="tabpanel">
-                        <form id="bridge-form">
-                            <div class="row mb-3">
-                                <div class="col-md-6">
+
+                    <!-- Bridge Configuration -->
+                    <div class="tab-pane" id="tabs-bridge">
+                        <form id="bridgeConfigForm">
+                            <div class="mb-3">
+                                <label class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="bridge_enabled" {{if .LANConfig.BridgeEnabled}}checked{{end}}>
+                                    <span class="form-check-label">Enable Bridge Mode</span>
+                                </label>
+                                <small class="form-hint">Bridge multiple interfaces together for LAN connectivity</small>
+                            </div>
+
+                            <div id="bridgeSettings" {{if not .LANConfig.BridgeEnabled}}style="display: none;"{{end}}>
+                                <div class="mb-3">
                                     <label class="form-label">Bridge Name</label>
                                     <input type="text" class="form-control" name="bridge_name" value="br0" placeholder="br0">
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Bridge Priority</label>
-                                    <input type="number" class="form-control" name="bridge_priority" value="32768" placeholder="32768">
-                                </div>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-12">
-                                    <label class="form-label">Bridge Members</label>
-                                    <div class="form-selectgroup form-selectgroup-boxes d-flex flex-wrap">
+
+                                <div class="mb-3">
+                                    <label class="form-label">Bridge Interfaces</label>
+                                    <div class="form-selectgroup">
                                         <label class="form-selectgroup-item">
-                                            <input type="checkbox" name="bridge_members" value="eth1" class="form-selectgroup-input" checked>
+                                            <input type="checkbox" name="bridge_interfaces" value="eth0" class="form-selectgroup-input" checked>
+                                            <span class="form-selectgroup-label">eth0</span>
+                                        </label>
+                                        <label class="form-selectgroup-item">
+                                            <input type="checkbox" name="bridge_interfaces" value="eth1" class="form-selectgroup-input">
                                             <span class="form-selectgroup-label">eth1</span>
                                         </label>
                                         <label class="form-selectgroup-item">
-                                            <input type="checkbox" name="bridge_members" value="eth2" class="form-selectgroup-input">
-                                            <span class="form-selectgroup-label">eth2</span>
-                                        </label>
-                                        <label class="form-selectgroup-item">
-                                            <input type="checkbox" name="bridge_members" value="wlan0" class="form-selectgroup-input">
+                                            <input type="checkbox" name="bridge_interfaces" value="wlan0" class="form-selectgroup-input">
                                             <span class="form-selectgroup-label">wlan0</span>
                                         </label>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="stp_enabled" checked>
-                                        <span class="form-check-label">Enable Spanning Tree Protocol (STP)</span>
-                                    </label>
+
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">STP (Spanning Tree Protocol)</label>
+                                            <select class="form-select" name="stp_enabled">
+                                                <option value="0">Disabled</option>
+                                                <option value="1">Enabled</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Forward Delay</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" name="forward_delay" value="15" min="4" max="30">
+                                                <span class="input-group-text">seconds</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" name="igmp_snooping">
-                                        <span class="form-check-label">Enable IGMP Snooping</span>
-                                    </label>
+
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Hello Time</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" name="hello_time" value="2" min="1" max="10">
+                                                <span class="input-group-text">seconds</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Max Age</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" name="max_age" value="20" min="6" max="40">
+                                                <span class="input-group-text">seconds</span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            
+
                             <div class="form-footer">
-                                <button type="submit" class="btn btn-primary">Save Bridge Settings</button>
+                                <button type="submit" class="btn btn-primary">Save Bridge Configuration</button>
                             </div>
                         </form>
                     </div>
@@ -326,163 +434,245 @@
 
 <script>
 // Handle DHCP mode changes
-document.getElementById('dhcp-mode').addEventListener('change', function() {
-    const serverConfig = document.getElementById('dhcp-server-config');
-    const relayConfig = document.getElementById('dhcp-relay-config');
+document.querySelector('select[name="dhcp_mode"]').addEventListener('change', function() {
+    const serverConfig = document.getElementById('dhcpServerConfig');
+    const relayConfig = document.getElementById('dhcpRelayConfig');
     
-    serverConfig.classList.add('d-none');
-    relayConfig.classList.add('d-none');
+    serverConfig.style.display = 'none';
+    relayConfig.style.display = 'none';
     
     if (this.value === 'server') {
-        serverConfig.classList.remove('d-none');
+        serverConfig.style.display = 'block';
     } else if (this.value === 'relay') {
-        relayConfig.classList.remove('d-none');
+        relayConfig.style.display = 'block';
     }
 });
 
-function addDNSZone() {
-    const domain = prompt('Enter domain name (e.g., router.local):');
-    const type = prompt('Enter record type (A, AAAA, CNAME):') || 'A';
-    const value = prompt('Enter record value (e.g., IP address):');
-    
-    if (domain && value) {
-        const tbody = document.getElementById('dns-zones');
-        const row = tbody.insertRow();
-        row.innerHTML = `
-            <td>${domain}</td>
-            <td>${type}</td>
-            <td>${value}</td>
-            <td>
-                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeDNSZone(this)">Remove</button>
-            </td>
-        `;
-    }
-}
+// Handle bridge enable/disable
+document.querySelector('input[name="bridge_enabled"]').addEventListener('change', function() {
+    const bridgeSettings = document.getElementById('bridgeSettings');
+    bridgeSettings.style.display = this.checked ? 'block' : 'none';
+});
 
-function removeDNSZone(button) {
-    if (confirm('Are you sure you want to remove this DNS zone?')) {
-        button.closest('tr').remove();
-    }
-}
-
-function addDNSRoute() {
-    const pattern = prompt('Enter domain pattern (e.g., *.local or geozone:us):');
-    const type = prompt('Enter route type (domain, geozone):') || 'domain';
-    const target = prompt('Enter target (IP address, direct, block):');
-    
-    if (pattern && target) {
-        const tbody = document.getElementById('dns-routes');
-        // Remove empty row if exists
-        const emptyRow = tbody.querySelector('td[colspan="4"]');
-        if (emptyRow) {
-            emptyRow.closest('tr').remove();
-        }
-        
-        const row = tbody.insertRow();
-        row.innerHTML = `
-            <td>${pattern}</td>
-            <td>${type}</td>
-            <td>${target}</td>
-            <td>
-                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeDNSRoute(this)">Remove</button>
-            </td>
-        `;
-    }
-}
-
-function removeDNSRoute(button) {
-    if (confirm('Are you sure you want to remove this DNS route?')) {
-        button.closest('tr').remove();
-    }
-}
-
-// Handle form submissions
-document.getElementById('dhcp-form').addEventListener('submit', function(e) {
+// DHCP configuration form
+document.getElementById('dhcpConfigForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
-    const data = Object.fromEntries(formData.entries());
+    const data = {};
     
-    fetch('/api/network/lan/dhcp', {
+    for (let [key, value] of formData.entries()) {
+        data[key] = value;
+    }
+    
+    fetch('/network/api/lan/dhcp', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify(data)
     })
     .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert('Error: ' + result.error);
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
         } else {
-            alert('DHCP configuration saved successfully');
+            showAlert('Success', 'DHCP configuration saved successfully', 'success');
+            refreshLANStatus();
         }
     })
-    .catch(error => alert('Error saving DHCP configuration: ' + error));
-});
-
-document.getElementById('dns-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const data = Object.fromEntries(formData.entries());
-    
-    // Collect DNS zones
-    const zones = [];
-    document.querySelectorAll('#dns-zones tr').forEach(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length >= 3) {
-            zones.push({
-                domain: cells[0].textContent,
-                type: cells[1].textContent,
-                value: cells[2].textContent
-            });
-        }
+    .catch(error => {
+        showAlert('Error', 'Failed to save DHCP configuration', 'danger');
+        console.error('Error:', error);
     });
-    data.local_zones = zones;
-    
-    fetch('/api/network/lan/dns', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert('Error: ' + result.error);
-        } else {
-            alert('DNS configuration saved successfully');
-        }
-    })
-    .catch(error => alert('Error saving DNS configuration: ' + error));
 });
 
-document.getElementById('bridge-form').addEventListener('submit', function(e) {
+// DNS configuration form
+document.getElementById('dnsConfigForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
-    const data = Object.fromEntries(formData.entries());
+    const data = {};
     
-    // Collect bridge members
-    const members = [];
-    document.querySelectorAll('input[name="bridge_members"]:checked').forEach(cb => {
-        members.push(cb.value);
-    });
-    data.bridge_members = members;
+    for (let [key, value] of formData.entries()) {
+        data[key] = value;
+    }
     
-    fetch('/api/network/lan/bridge', {
+    // Parse DNS servers
+    if (data.dns_servers) {
+        data.dns_servers = data.dns_servers.split('\n').filter(s => s.trim());
+    }
+    
+    fetch('/network/api/lan/dns', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify(data)
     })
     .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert('Error: ' + result.error);
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
         } else {
-            alert('Bridge settings saved successfully');
+            showAlert('Success', 'DNS configuration saved successfully', 'success');
         }
     })
-    .catch(error => alert('Error saving bridge settings: ' + error));
+    .catch(error => {
+        showAlert('Error', 'Failed to save DNS configuration', 'danger');
+        console.error('Error:', error);
+    });
+});
+
+// Bridge configuration form
+document.getElementById('bridgeConfigForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {};
+    
+    // Handle checkboxes
+    data.bridge_enabled = this.elements.bridge_enabled.checked;
+    data.bridge_interfaces = [];
+    
+    const bridgeInterfaces = this.querySelectorAll('input[name="bridge_interfaces"]:checked');
+    bridgeInterfaces.forEach(input => {
+        data.bridge_interfaces.push(input.value);
+    });
+    
+    // Other form fields
+    data.bridge_name = this.elements.bridge_name.value;
+    data.stp_enabled = this.elements.stp_enabled.value;
+    data.forward_delay = this.elements.forward_delay.value;
+    data.hello_time = this.elements.hello_time.value;
+    data.max_age = this.elements.max_age.value;
+    
+    fetch('/network/api/lan/bridge', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', 'Bridge configuration saved successfully', 'success');
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to save bridge configuration', 'danger');
+        console.error('Error:', error);
+    });
+});
+
+function refreshLANStatus() {
+    if (window.ws && window.ws.readyState === WebSocket.OPEN) {
+        window.ws.send(JSON.stringify({
+            type: 'get_lan_status'
+        }));
+    }
+}
+
+function addStaticReservation() {
+    // This would open a modal for adding static DHCP reservations
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('genericModal'));
+    
+    document.getElementById('modalTitle').textContent = 'Add Static DHCP Reservation';
+    document.getElementById('modalBody').innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">MAC Address</label>
+            <input type="text" class="form-control" name="mac_address" placeholder="00:11:22:33:44:55" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">IP Address</label>
+            <input type="text" class="form-control" name="ip_address" placeholder="192.168.1.50" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Hostname (Optional)</label>
+            <input type="text" class="form-control" name="hostname" placeholder="my-device">
+        </div>
+    `;
+    
+    modal.show();
+}
+
+function loadDHCPLeases() {
+    fetch('/network/api/lan/dhcp/leases')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('dhcpLeasesTable');
+            tbody.innerHTML = '';
+            
+            if (data.leases && data.leases.length > 0) {
+                data.leases.forEach(lease => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><code>${lease.ip}</code></td>
+                        <td><code>${lease.mac}</code></td>
+                        <td>${lease.hostname || '-'}</td>
+                        <td>${lease.expires || 'Never'}</td>
+                        <td>
+                            <a href="#" class="btn btn-sm btn-outline-primary" onclick="makeStatic('${lease.mac}', '${lease.ip}', '${lease.hostname}')">Make Static</a>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No active leases</td></tr>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading DHCP leases:', error);
+        });
+}
+
+function makeStatic(mac, ip, hostname) {
+    const data = {
+        mac_address: mac,
+        ip_address: ip,
+        hostname: hostname
+    };
+    
+    fetch('/network/api/lan/dhcp/static', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', 'Static reservation created successfully', 'success');
+            loadDHCPLeases();
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to create static reservation', 'danger');
+        console.error('Error:', error);
+    });
+}
+
+// Load initial data
+document.addEventListener('DOMContentLoaded', function() {
+    // Set initial DHCP mode display
+    const dhcpMode = document.querySelector('select[name="dhcp_mode"]').value;
+    if (dhcpMode) {
+        document.querySelector('select[name="dhcp_mode"]').dispatchEvent(new Event('change'));
+    }
+    
+    // Load DHCP leases
+    loadDHCPLeases();
+    
+    // Set up periodic refresh
+    setInterval(loadDHCPLeases, 30000); // Refresh every 30 seconds
 });
 </script>
 {{end}}
-{{template "base/layout.html" .}}
+
+{{template "layout.html" .}}

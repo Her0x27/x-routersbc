@@ -3,340 +3,253 @@ package net
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
 	"strings"
 )
 
-// InterfacesConfigurator handles /etc/network/interfaces configuration
-type InterfacesConfigurator struct {
-	configPath string
+type SystemInterface struct {
+	Name string
+	Type string
+	MAC  string
+	IP   string
+	IsUp bool
 }
 
-// NewInterfacesConfigurator creates a new interfaces configurator
-func NewInterfacesConfigurator() *InterfacesConfigurator {
-	return &InterfacesConfigurator{
-		configPath: "/etc/network/interfaces",
-	}
-}
-
-// IsAvailable checks if /etc/network/interfaces is available
-func (i *InterfacesConfigurator) IsAvailable() bool {
-	_, err := os.Stat(i.configPath)
-	return !os.IsNotExist(err)
-}
-
-// Interface represents a network interface configuration
-type Interface struct {
+type InterfaceConfig struct {
 	Name      string
-	Family    string // inet, inet6
-	Method    string // dhcp, static, manual
-	Address   string
-	Netmask   string
-	Gateway   string
-	DNS       []string
-	PreUp     []string
-	PostUp    []string
-	PreDown   []string
-	PostDown  []string
-	Options   map[string]string
+	Type      string
+	Settings  map[string]interface{}
 }
 
-// GetInterfaces reads all interfaces from /etc/network/interfaces
-func (i *InterfacesConfigurator) GetInterfaces() ([]Interface, error) {
-	file, err := os.Open(i.configPath)
+func GetSystemInterfaces() ([]SystemInterface, error) {
+	interfaces, err := net.Interfaces()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get network interfaces: %v", err)
 	}
-	defer file.Close()
-
-	var interfaces []Interface
-	var currentInterface *Interface
 	
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
+	var systemInterfaces []SystemInterface
+	
+	for _, iface := range interfaces {
+		// Skip loopback interface
+		if iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
 		
-		// Skip empty lines and comments
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
+		sysIface := SystemInterface{
+			Name: iface.Name,
+			MAC:  iface.HardwareAddr.String(),
+			IsUp: iface.Flags&net.FlagUp != 0,
 		}
-
-		parts := strings.Fields(line)
-		if len(parts) < 2 {
-			continue
-		}
-
-		switch parts[0] {
-		case "auto":
-			// Auto interface declaration
-			continue
-		case "allow-hotplug":
-			// Hotplug interface declaration
-			continue
-		case "iface":
-			// Save previous interface
-			if currentInterface != nil {
-				interfaces = append(interfaces, *currentInterface)
-			}
-			
-			// New interface definition
-			if len(parts) >= 4 {
-				currentInterface = &Interface{
-					Name:    parts[1],
-					Family:  parts[2],
-					Method:  parts[3],
-					Options: make(map[string]string),
-				}
-			}
-		default:
-			if currentInterface != nil {
-				// Interface options
-				if len(parts) >= 2 {
-					key := parts[0]
-					value := strings.Join(parts[1:], " ")
-					
-					switch key {
-					case "address":
-						currentInterface.Address = value
-					case "netmask":
-						currentInterface.Netmask = value
-					case "gateway":
-						currentInterface.Gateway = value
-					case "dns-nameservers":
-						currentInterface.DNS = parts[1:]
-					case "pre-up":
-						currentInterface.PreUp = append(currentInterface.PreUp, value)
-					case "post-up", "up":
-						currentInterface.PostUp = append(currentInterface.PostUp, value)
-					case "pre-down":
-						currentInterface.PreDown = append(currentInterface.PreDown, value)
-					case "post-down", "down":
-						currentInterface.PostDown = append(currentInterface.PostDown, value)
-					default:
-						currentInterface.Options[key] = value
+		
+		// Determine interface type
+		sysIface.Type = determineInterfaceType(iface.Name)
+		
+		// Get IP address
+		addrs, err := iface.Addrs()
+		if err == nil && len(addrs) > 0 {
+			for _, addr := range addrs {
+				if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+					if ipnet.IP.To4() != nil {
+						sysIface.IP = ipnet.IP.String()
+						break
 					}
 				}
 			}
 		}
+		
+		systemInterfaces = append(systemInterfaces, sysIface)
 	}
-
-	// Add last interface
-	if currentInterface != nil {
-		interfaces = append(interfaces, *currentInterface)
-	}
-
-	return interfaces, scanner.Err()
-}
-
-// WriteInterfaces writes interfaces configuration to file
-func (i *InterfacesConfigurator) WriteInterfaces(interfaces []Interface) error {
-	var content strings.Builder
 	
-	content.WriteString("# This file describes the network interfaces available on your system\n")
-	content.WriteString("# and how to activate them. For more information, see interfaces(5).\n\n")
-	content.WriteString("source /etc/network/interfaces.d/*\n\n")
-	content.WriteString("# The loopback network interface\n")
-	content.WriteString("auto lo\n")
-	content.WriteString("iface lo inet loopback\n\n")
-
-	for _, iface := range interfaces {
-		if iface.Name == "lo" {
-			continue // Skip loopback, already handled
-		}
-
-		content.WriteString(fmt.Sprintf("# Interface %s\n", iface.Name))
-		content.WriteString(fmt.Sprintf("auto %s\n", iface.Name))
-		content.WriteString(fmt.Sprintf("iface %s %s %s\n", iface.Name, iface.Family, iface.Method))
-
-		if iface.Address != "" {
-			content.WriteString(fmt.Sprintf("    address %s\n", iface.Address))
-		}
-		if iface.Netmask != "" {
-			content.WriteString(fmt.Sprintf("    netmask %s\n", iface.Netmask))
-		}
-		if iface.Gateway != "" {
-			content.WriteString(fmt.Sprintf("    gateway %s\n", iface.Gateway))
-		}
-		if len(iface.DNS) > 0 {
-			content.WriteString(fmt.Sprintf("    dns-nameservers %s\n", strings.Join(iface.DNS, " ")))
-		}
-
-		for _, cmd := range iface.PreUp {
-			content.WriteString(fmt.Sprintf("    pre-up %s\n", cmd))
-		}
-		for _, cmd := range iface.PostUp {
-			content.WriteString(fmt.Sprintf("    post-up %s\n", cmd))
-		}
-		for _, cmd := range iface.PreDown {
-			content.WriteString(fmt.Sprintf("    pre-down %s\n", cmd))
-		}
-		for _, cmd := range iface.PostDown {
-			content.WriteString(fmt.Sprintf("    post-down %s\n", cmd))
-		}
-
-		for key, value := range iface.Options {
-			content.WriteString(fmt.Sprintf("    %s %s\n", key, value))
-		}
-
-		content.WriteString("\n")
-	}
-
-	return ioutil.WriteFile(i.configPath, []byte(content.String()), 0644)
+	return systemInterfaces, nil
 }
 
-// ConfigureInterface configures a specific interface
-func (i *InterfacesConfigurator) ConfigureInterface(name, interfaceType, configJSON string) error {
-	interfaces, err := i.GetInterfaces()
-	if err != nil {
-		return err
+func determineInterfaceType(name string) string {
+	switch {
+	case strings.HasPrefix(name, "eth"):
+		return "ethernet"
+	case strings.HasPrefix(name, "wlan"):
+		return "wifi"
+	case strings.HasPrefix(name, "bt"):
+		return "bluetooth"
+	case strings.HasPrefix(name, "br"):
+		return "bridge"
+	case strings.Contains(name, "."):
+		return "vlan"
+	case strings.HasPrefix(name, "tun") || strings.HasPrefix(name, "tap"):
+		return "vpn"
+	case strings.HasPrefix(name, "wg"):
+		return "wireguard"
+	case strings.HasPrefix(name, "ppp"):
+		return "ppp"
+	default:
+		return "unknown"
 	}
+}
 
-	// Find or create interface
-	var targetInterface *Interface
-	for idx := range interfaces {
-		if interfaces[idx].Name == name {
-			targetInterface = &interfaces[idx]
-			break
-		}
+func ApplyInterfaceConfiguration(name, ifaceType, config string) error {
+	// Try netplan first if available
+	if IsNetplanAvailable() {
+		return applyNetplanInterfaceConfig(name, ifaceType, config)
 	}
+	
+	// Fallback to traditional interfaces file
+	return applyTraditionalInterfaceConfig(name, ifaceType, config)
+}
 
-	if targetInterface == nil {
-		// Create new interface
-		newInterface := Interface{
-			Name:    name,
-			Family:  "inet",
-			Method:  "dhcp",
-			Options: make(map[string]string),
-		}
-		interfaces = append(interfaces, newInterface)
-		targetInterface = &interfaces[len(interfaces)-1]
-	}
-
-	// Configure based on type
-	switch interfaceType {
-	case "static":
-		targetInterface.Method = "static"
-		// TODO: Parse configJSON to set IP, netmask, gateway
-	case "dhcp":
-		targetInterface.Method = "dhcp"
+func applyNetplanInterfaceConfig(name, ifaceType, config string) error {
+	// Parse config JSON and convert to appropriate netplan config
+	// This is a simplified implementation
+	switch ifaceType {
+	case "ethernet":
+		return AddEthernetInterface(name, EthernetConfig{
+			DHCP4: true, // Default to DHCP, should parse from config
+		})
+	case "wifi":
+		return AddWifiInterface(name, WifiConfig{
+			DHCP4: true, // Default to DHCP, should parse from config
+		})
+	case "vlan":
+		// Parse VLAN ID from config
+		return AddVlanInterface(name, VlanConfig{
+			ID:   1, // Should parse from config
+			Link: "eth0", // Should parse from config
+			DHCP4: true,
+		})
 	case "bridge":
-		targetInterface.Method = "static"
-		targetInterface.Options["bridge_ports"] = "none"
-		targetInterface.Options["bridge_stp"] = "off"
-		targetInterface.Options["bridge_fd"] = "0"
+		return AddBridgeInterface(name, BridgeConfig{
+			DHCP4: true,
+			Interfaces: []string{}, // Should parse from config
+		})
 	}
-
-	return i.WriteInterfaces(interfaces)
+	
+	return fmt.Errorf("unsupported interface type: %s", ifaceType)
 }
 
-// RemoveInterface removes an interface configuration
-func (i *InterfacesConfigurator) RemoveInterface(name string) error {
-	interfaces, err := i.GetInterfaces()
+func applyTraditionalInterfaceConfig(name, ifaceType, config string) error {
+	// Implementation for /etc/network/interfaces
+	// This is a fallback for systems without netplan
+	
+	configLines := []string{
+		fmt.Sprintf("auto %s", name),
+		fmt.Sprintf("iface %s inet dhcp", name), // Default to DHCP
+	}
+	
+	// Read existing interfaces file
+	interfacesPath := "/etc/network/interfaces"
+	existingContent := ""
+	
+	if data, err := os.ReadFile(interfacesPath); err == nil {
+		existingContent = string(data)
+	}
+	
+	// Remove existing configuration for this interface
+	existingContent = removeInterfaceFromConfig(existingContent, name)
+	
+	// Add new configuration
+	newConfig := existingContent + "\n" + strings.Join(configLines, "\n") + "\n"
+	
+	// Write updated configuration
+	if err := os.WriteFile(interfacesPath, []byte(newConfig), 0644); err != nil {
+		return fmt.Errorf("failed to write interfaces config: %v", err)
+	}
+	
+	// Restart networking
+	return restartNetworking()
+}
+
+func removeInterfaceFromConfig(content, interfaceName string) string {
+	lines := strings.Split(content, "\n")
+	var result []string
+	skipLines := false
+	
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		
+		// Check if this line starts configuration for our interface
+		if strings.HasPrefix(trimmed, "auto "+interfaceName) ||
+		   strings.HasPrefix(trimmed, "iface "+interfaceName) {
+			skipLines = true
+			continue
+		}
+		
+		// Check if this line starts configuration for another interface
+		if strings.HasPrefix(trimmed, "auto ") ||
+		   strings.HasPrefix(trimmed, "iface ") {
+			skipLines = false
+		}
+		
+		if !skipLines {
+			result = append(result, line)
+		}
+	}
+	
+	return strings.Join(result, "\n")
+}
+
+func RemoveInterfaceConfiguration(name string) error {
+	// Try netplan first
+	if IsNetplanAvailable() {
+		return RemoveInterface(name)
+	}
+	
+	// Fallback to traditional interfaces
+	interfacesPath := "/etc/network/interfaces"
+	
+	data, err := os.ReadFile(interfacesPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read interfaces config: %v", err)
 	}
-
-	// Filter out the interface
-	var filteredInterfaces []Interface
-	for _, iface := range interfaces {
-		if iface.Name != name {
-			filteredInterfaces = append(filteredInterfaces, iface)
-		}
+	
+	content := removeInterfaceFromConfig(string(data), name)
+	
+	if err := os.WriteFile(interfacesPath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("failed to write interfaces config: %v", err)
 	}
-
-	return i.WriteInterfaces(filteredInterfaces)
+	
+	return restartNetworking()
 }
 
-// SetStaticIP sets static IP configuration for an interface
-func (i *InterfacesConfigurator) SetStaticIP(interfaceName, ip, netmask, gateway string, dnsServers []string) error {
-	interfaces, err := i.GetInterfaces()
-	if err != nil {
-		return err
+func restartNetworking() error {
+	// Try systemd first
+	if err := exec.Command("systemctl", "restart", "networking").Run(); err == nil {
+		return nil
 	}
-
-	// Find or create interface
-	var targetInterface *Interface
-	for idx := range interfaces {
-		if interfaces[idx].Name == interfaceName {
-			targetInterface = &interfaces[idx]
-			break
-		}
+	
+	// Fallback to traditional service command
+	if err := exec.Command("service", "networking", "restart").Run(); err == nil {
+		return nil
 	}
-
-	if targetInterface == nil {
-		// Create new interface
-		newInterface := Interface{
-			Name:    interfaceName,
-			Family:  "inet",
-			Options: make(map[string]string),
-		}
-		interfaces = append(interfaces, newInterface)
-		targetInterface = &interfaces[len(interfaces)-1]
-	}
-
-	targetInterface.Method = "static"
-	targetInterface.Address = ip
-	targetInterface.Netmask = netmask
-	targetInterface.Gateway = gateway
-	targetInterface.DNS = dnsServers
-
-	return i.WriteInterfaces(interfaces)
+	
+	// Try ifup/ifdown
+	return exec.Command("ifdown", "-a").Run()
 }
 
-// EnableDHCP enables DHCP for an interface
-func (i *InterfacesConfigurator) EnableDHCP(interfaceName string) error {
-	interfaces, err := i.GetInterfaces()
-	if err != nil {
-		return err
-	}
-
-	// Find or create interface
-	var targetInterface *Interface
-	for idx := range interfaces {
-		if interfaces[idx].Name == interfaceName {
-			targetInterface = &interfaces[idx]
-			break
-		}
-	}
-
-	if targetInterface == nil {
-		// Create new interface
-		newInterface := Interface{
-			Name:    interfaceName,
-			Family:  "inet",
-			Options: make(map[string]string),
-		}
-		interfaces = append(interfaces, newInterface)
-		targetInterface = &interfaces[len(interfaces)-1]
-	}
-
-	targetInterface.Method = "dhcp"
-	targetInterface.Address = ""
-	targetInterface.Netmask = ""
-	targetInterface.Gateway = ""
-	targetInterface.DNS = nil
-
-	return i.WriteInterfaces(interfaces)
+func BringInterfaceUp(name string) error {
+	return exec.Command("ip", "link", "set", name, "up").Run()
 }
 
-// RestartNetworking restarts network service
-func (i *InterfacesConfigurator) RestartNetworking() error {
-	// Try systemctl first
-	if err := exec.Command("systemctl", "restart", "networking").Run(); err != nil {
-		// Fallback to service command
-		return exec.Command("service", "networking", "restart").Run()
-	}
-	return nil
+func BringInterfaceDown(name string) error {
+	return exec.Command("ip", "link", "set", name, "down").Run()
 }
 
-// BringInterfaceUp brings an interface up
-func (i *InterfacesConfigurator) BringInterfaceUp(name string) error {
-	return exec.Command("ifup", name).Run()
+func SetInterfaceIP(name, ip, netmask string) error {
+	// Remove existing IP addresses
+	exec.Command("ip", "addr", "flush", "dev", name).Run()
+	
+	// Add new IP address
+	cidr := fmt.Sprintf("%s/%s", ip, netmask)
+	return exec.Command("ip", "addr", "add", cidr, "dev", name).Run()
 }
 
-// BringInterfaceDown brings an interface down
-func (i *InterfacesConfigurator) BringInterfaceDown(name string) error {
-	return exec.Command("ifdown", name).Run()
+func EnableDHCP(name string) error {
+	// This would typically be handled by the network configuration files
+	// For immediate effect, we can try dhclient
+	return exec.Command("dhclient", name).Run()
+}
+
+func DisableDHCP(name string) error {
+	// Kill dhclient for this interface
+	return exec.Command("pkill", "-f", "dhclient.*"+name).Run()
 }

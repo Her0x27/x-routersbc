@@ -1,520 +1,378 @@
 package net
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
-	"time"
 )
 
-// DNSResolver represents a DNS resolver configuration
+type DNSConfig struct {
+	Mode       string   `json:"mode"`
+	Servers    []string `json:"servers"`
+	LocalZones []DNSZone `json:"local_zones"`
+	Enabled    bool     `json:"enabled"`
+}
+
+type DNSZone struct {
+	Zone   string `json:"zone"`
+	Type   string `json:"type"`
+	Value  string `json:"value"`
+}
+
 type DNSResolver struct {
-	Name     string `json:"name"`
 	Address  string `json:"address"`
-	Type     string `json:"type"` // udp, tcp, tls, https
+	Protocol string `json:"protocol"`
 	Port     int    `json:"port"`
-	Enabled  bool   `json:"enabled"`
-	Priority int    `json:"priority"`
 }
 
-// DNSLocalZone represents a local DNS zone
-type DNSLocalZone struct {
-	Zone    string            `json:"zone"`
-	Records map[string]string `json:"records"` // hostname -> IP
-	Enabled bool              `json:"enabled"`
-}
+const (
+	resolvConfPath = "/etc/resolv.conf"
+	dnsmasqConfPath = "/etc/dnsmasq.conf"
+	unboundConfPath = "/etc/unbound/unbound.conf"
+)
 
-// DNSRouting represents DNS routing rules
-type DNSRouting struct {
-	Domain   string `json:"domain"`
-	Target   string `json:"target"` // IP address, 'direct', 'block', or resolver
-	Type     string `json:"type"`   // domain, geozone
-	Enabled  bool   `json:"enabled"`
-	Priority int    `json:"priority"`
-}
-
-// DNSConfiguration represents complete DNS configuration
-type DNSConfiguration struct {
-	Mode        string         `json:"mode"`        // proxy, forward, server, direct
-	Resolvers   []DNSResolver  `json:"resolvers"`
-	LocalZones  []DNSLocalZone `json:"local_zones"`
-	Routing     []DNSRouting   `json:"routing"`
-	SecureDNS   string         `json:"secure_dns"`  // none, dot, doh
-	CacheSize   int            `json:"cache_size"`
-	CacheTTL    int            `json:"cache_ttl"`
-	LogQueries  bool           `json:"log_queries"`
-	BlockAds    bool           `json:"block_ads"`
-	Enabled     bool           `json:"enabled"`
-}
-
-// DNSConfigurator handles DNS configuration
-type DNSConfigurator struct {
-	configPath     string
-	resolveConfPath string
-	dnsmasqPath    string
-	unboundPath    string
-}
-
-// NewDNSConfigurator creates a new DNS configurator
-func NewDNSConfigurator() *DNSConfigurator {
-	return &DNSConfigurator{
-		configPath:      "/etc/routersbc",
-		resolveConfPath: "/etc/resolv.conf",
-		dnsmasqPath:     "/etc/dnsmasq.conf",
-		unboundPath:     "/etc/unbound",
-	}
-}
-
-// GetDNSConfiguration gets current DNS configuration
-func (d *DNSConfigurator) GetDNSConfiguration() (*DNSConfiguration, error) {
-	config := &DNSConfiguration{
-		Mode:       "proxy",
-		CacheSize:  1000,
-		CacheTTL:   3600,
-		SecureDNS:  "none",
-		Enabled:    true,
-		Resolvers:  []DNSResolver{},
-		LocalZones: []DNSLocalZone{},
-		Routing:    []DNSRouting{},
-	}
-
-	// Try to load saved configuration
-	configFile := filepath.Join(d.configPath, "dns.json")
-	if data, err := ioutil.ReadFile(configFile); err == nil {
-		if err := json.Unmarshal(data, config); err == nil {
-			return config, nil
-		}
-	}
-
-	// Detect current system DNS configuration
-	return d.detectCurrentDNSConfig()
-}
-
-// detectCurrentDNSConfig detects current DNS configuration from system
-func (d *DNSConfigurator) detectCurrentDNSConfig() (*DNSConfiguration, error) {
-	config := &DNSConfiguration{
+func GetDNSConfiguration() (*DNSConfig, error) {
+	config := &DNSConfig{
 		Mode:       "direct",
+		Servers:    []string{},
+		LocalZones: []DNSZone{},
 		Enabled:    true,
-		Resolvers:  []DNSResolver{},
-		LocalZones: []DNSLocalZone{},
-		Routing:    []DNSRouting{},
-		SecureDNS:  "none",
-		CacheSize:  1000,
-		CacheTTL:   3600,
 	}
-
-	// Read /etc/resolv.conf
-	if data, err := ioutil.ReadFile(d.resolveConfPath); err == nil {
-		lines := strings.Split(string(data), "\n")
-		priority := 1
-		for _, line := range lines {
-			line = strings.TrimSpace(line)
-			if strings.HasPrefix(line, "nameserver ") {
-				addr := strings.TrimPrefix(line, "nameserver ")
-				resolver := DNSResolver{
-					Name:     fmt.Sprintf("System DNS %d", priority),
-					Address:  addr,
-					Type:     "udp",
-					Port:     53,
-					Enabled:  true,
-					Priority: priority,
-				}
-				config.Resolvers = append(config.Resolvers, resolver)
-				priority++
-			}
-		}
-	}
-
+	
 	// Check if dnsmasq is running
-	if d.isDNSMasqRunning() {
+	if isDNSMasqRunning() {
 		config.Mode = "proxy"
+		dnsmasqConfig, err := parseDNSMasqConfig()
+		if err == nil {
+			config.Servers = dnsmasqConfig.Servers
+			config.LocalZones = dnsmasqConfig.LocalZones
+		}
+	} else if isUnboundRunning() {
+		config.Mode = "forward"
+		unboundConfig, err := parseUnboundConfig()
+		if err == nil {
+			config.Servers = unboundConfig.Servers
+		}
+	} else {
+		// Direct mode - read from resolv.conf
+		servers := getCurrentDNSServers()
+		config.Servers = servers
 	}
-
-	// Check if unbound is running
-	if d.isUnboundRunning() {
-		config.Mode = "server"
-	}
-
+	
 	return config, nil
 }
 
-// SetDNSConfiguration applies DNS configuration
-func (d *DNSConfigurator) SetDNSConfiguration(config *DNSConfiguration) error {
-	// Save configuration
-	if err := d.saveDNSConfig(config); err != nil {
-		return fmt.Errorf("failed to save DNS config: %v", err)
-	}
+func isDNSMasqRunning() bool {
+	err := exec.Command("pgrep", "dnsmasq").Run()
+	return err == nil
+}
 
-	// Apply configuration based on mode
+func isUnboundRunning() bool {
+	err := exec.Command("pgrep", "unbound").Run()
+	return err == nil
+}
+
+type dnsmasqConfig struct {
+	Servers    []string
+	LocalZones []DNSZone
+}
+
+func parseDNSMasqConfig() (*dnsmasqConfig, error) {
+	config := &dnsmasqConfig{
+		Servers:    []string{},
+		LocalZones: []DNSZone{},
+	}
+	
+	data, err := ioutil.ReadFile(dnsmasqConfPath)
+	if err != nil {
+		return config, err
+	}
+	
+	lines := strings.Split(string(data), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "server=") {
+			server := strings.TrimPrefix(line, "server=")
+			config.Servers = append(config.Servers, server)
+		} else if strings.HasPrefix(line, "address=") {
+			// Parse local zone entries
+			address := strings.TrimPrefix(line, "address=")
+			parts := strings.Split(address, "/")
+			if len(parts) == 2 {
+				config.LocalZones = append(config.LocalZones, DNSZone{
+					Zone:  parts[0],
+					Type:  "A",
+					Value: parts[1],
+				})
+			}
+		}
+	}
+	
+	return config, nil
+}
+
+type unboundConfig struct {
+	Servers []string
+}
+
+func parseUnboundConfig() (*unboundConfig, error) {
+	config := &unboundConfig{
+		Servers: []string{},
+	}
+	
+	data, err := ioutil.ReadFile(unboundConfPath)
+	if err != nil {
+		return config, err
+	}
+	
+	lines := strings.Split(string(data), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "forward-addr:") {
+			server := strings.TrimSpace(strings.TrimPrefix(line, "forward-addr:"))
+			config.Servers = append(config.Servers, server)
+		}
+	}
+	
+	return config, nil
+}
+
+func SetDNSConfiguration(config *DNSConfig) error {
 	switch config.Mode {
 	case "direct":
-		return d.configureDirect(config)
+		return setDirectDNS(config.Servers)
 	case "proxy":
-		return d.configureDNSMasq(config)
+		return configureDNSMasq(config)
 	case "forward":
-		return d.configureForward(config)
+		return configureUnbound(config)
 	case "server":
-		return d.configureUnbound(config)
+		return configureDNSServer(config)
 	default:
 		return fmt.Errorf("unsupported DNS mode: %s", config.Mode)
 	}
 }
 
-// configureDirect configures direct DNS resolution
-func (d *DNSConfigurator) configureDirect(config *DNSConfiguration) error {
-	// Write resolv.conf
-	var content strings.Builder
-	content.WriteString("# Generated by RouterSBC\n")
+func setDirectDNS(servers []string) error {
+	var lines []string
+	lines = append(lines, "# Generated by router-sbc")
 	
-	for _, resolver := range config.Resolvers {
-		if resolver.Enabled {
-			content.WriteString(fmt.Sprintf("nameserver %s\n", resolver.Address))
-		}
+	for _, server := range servers {
+		lines = append(lines, fmt.Sprintf("nameserver %s", server))
 	}
-
-	// Add search domains if any local zones exist
-	if len(config.LocalZones) > 0 {
-		var domains []string
-		for _, zone := range config.LocalZones {
-			if zone.Enabled {
-				domains = append(domains, zone.Zone)
-			}
-		}
-		if len(domains) > 0 {
-			content.WriteString(fmt.Sprintf("search %s\n", strings.Join(domains, " ")))
-		}
-	}
-
-	return ioutil.WriteFile(d.resolveConfPath, []byte(content.String()), 0644)
+	
+	content := strings.Join(lines, "\n") + "\n"
+	return ioutil.WriteFile(resolvConfPath, []byte(content), 0644)
 }
 
-// configureDNSMasq configures dnsmasq for DNS proxy
-func (d *DNSConfigurator) configureDNSMasq(config *DNSConfiguration) error {
-	var content strings.Builder
+func configureDNSMasq(config *DNSConfig) error {
+	var lines []string
+	lines = append(lines, "# Generated by router-sbc")
+	lines = append(lines, "port=53")
+	lines = append(lines, "domain-needed")
+	lines = append(lines, "bogus-priv")
+	lines = append(lines, "expand-hosts")
+	lines = append(lines, "local=/local/")
+	lines = append(lines, "domain=local")
 	
-	content.WriteString("# Generated by RouterSBC\n")
-	content.WriteString("port=53\n")
-	content.WriteString("domain-needed\n")
-	content.WriteString("bogus-priv\n")
-	content.WriteString("no-resolv\n")
-	
-	// Configure upstream servers
-	for _, resolver := range config.Resolvers {
-		if resolver.Enabled {
-			if resolver.Type == "tcp" {
-				content.WriteString(fmt.Sprintf("server=%s#%d\n", resolver.Address, resolver.Port))
-			} else {
-				content.WriteString(fmt.Sprintf("server=%s\n", resolver.Address))
-			}
-		}
+	// Add upstream DNS servers
+	for _, server := range config.Servers {
+		lines = append(lines, fmt.Sprintf("server=%s", server))
 	}
-
-	// Configure local zones
+	
+	// Add local zones
 	for _, zone := range config.LocalZones {
-		if zone.Enabled {
-			content.WriteString(fmt.Sprintf("local=/%s/\n", zone.Zone))
-			for hostname, ip := range zone.Records {
-				content.WriteString(fmt.Sprintf("address=/%s.%s/%s\n", hostname, zone.Zone, ip))
-			}
+		if zone.Type == "A" {
+			lines = append(lines, fmt.Sprintf("address=/%s/%s", zone.Zone, zone.Value))
 		}
 	}
-
-	// Configure DNS routing
-	for _, route := range config.Routing {
-		if route.Enabled {
-			switch route.Target {
-			case "block":
-				content.WriteString(fmt.Sprintf("address=/%s/\n", route.Domain))
-			case "direct":
-				// Skip - let default resolvers handle
-			default:
-				// Route to specific resolver
-				content.WriteString(fmt.Sprintf("server=/%s/%s\n", route.Domain, route.Target))
-			}
-		}
+	
+	content := strings.Join(lines, "\n") + "\n"
+	if err := ioutil.WriteFile(dnsmasqConfPath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("failed to write dnsmasq config: %v", err)
 	}
-
-	// Cache configuration
-	if config.CacheSize > 0 {
-		content.WriteString(fmt.Sprintf("cache-size=%d\n", config.CacheSize))
-	}
-
-	// Logging
-	if config.LogQueries {
-		content.WriteString("log-queries\n")
-	}
-
-	// Ad blocking
-	if config.BlockAds {
-		content.WriteString("conf-file=/etc/dnsmasq.d/adblock.conf\n")
-	}
-
-	// Write configuration
-	if err := ioutil.WriteFile(d.dnsmasqPath, []byte(content.String()), 0644); err != nil {
-		return err
-	}
-
-	// Configure resolv.conf to use dnsmasq
-	resolvContent := "# Generated by RouterSBC\nnameserver 127.0.0.1\n"
-	if err := ioutil.WriteFile(d.resolveConfPath, []byte(resolvContent), 0644); err != nil {
-		return err
-	}
-
+	
 	// Restart dnsmasq
-	return d.restartDNSMasq()
+	return restartDNSMasq()
 }
 
-// configureForward configures DNS forwarding
-func (d *DNSConfigurator) configureForward(config *DNSConfiguration) error {
-	// Similar to proxy but with different forwarding rules
-	return d.configureDNSMasq(config)
-}
-
-// configureUnbound configures unbound DNS server
-func (d *DNSConfigurator) configureUnbound(config *DNSConfiguration) error {
-	unboundConf := filepath.Join(d.unboundPath, "unbound.conf")
+func configureUnbound(config *DNSConfig) error {
+	var lines []string
+	lines = append(lines, "# Generated by router-sbc")
+	lines = append(lines, "server:")
+	lines = append(lines, "  interface: 0.0.0.0")
+	lines = append(lines, "  port: 53")
+	lines = append(lines, "  do-ip4: yes")
+	lines = append(lines, "  do-ip6: no")
+	lines = append(lines, "  do-udp: yes")
+	lines = append(lines, "  do-tcp: yes")
+	lines = append(lines, "")
+	lines = append(lines, "forward-zone:")
+	lines = append(lines, "  name: \".\"")
 	
-	var content strings.Builder
-	content.WriteString("# Generated by RouterSBC\n")
-	content.WriteString("server:\n")
-	content.WriteString("    interface: 0.0.0.0\n")
-	content.WriteString("    port: 53\n")
-	content.WriteString("    do-ip4: yes\n")
-	content.WriteString("    do-ip6: no\n")
-	content.WriteString("    do-udp: yes\n")
-	content.WriteString("    do-tcp: yes\n")
-	content.WriteString("    access-control: 192.168.0.0/16 allow\n")
-	content.WriteString("    access-control: 10.0.0.0/8 allow\n")
-	content.WriteString("    access-control: 172.16.0.0/12 allow\n")
-
-	// Cache configuration
-	if config.CacheSize > 0 {
-		content.WriteString(fmt.Sprintf("    msg-cache-size: %dm\n", config.CacheSize/1000))
-		content.WriteString(fmt.Sprintf("    rrset-cache-size: %dm\n", config.CacheSize*2/1000))
+	// Add forward addresses
+	for _, server := range config.Servers {
+		lines = append(lines, fmt.Sprintf("  forward-addr: %s", server))
 	}
+	
+	content := strings.Join(lines, "\n") + "\n"
+	if err := ioutil.WriteFile(unboundConfPath, []byte(content), 0644); err != nil {
+		return fmt.Errorf("failed to write unbound config: %v", err)
+	}
+	
+	// Restart unbound
+	return restartUnbound()
+}
 
-	// Local zones
+func configureDNSServer(config *DNSConfig) error {
+	// This would configure the system as a full DNS server
+	// For now, just use dnsmasq as a server
+	return configureDNSMasq(config)
+}
+
+func restartDNSMasq() error {
+	// Try systemd first
+	if err := exec.Command("systemctl", "restart", "dnsmasq").Run(); err == nil {
+		return nil
+	}
+	
+	// Fallback to service command
+	return exec.Command("service", "dnsmasq", "restart").Run()
+}
+
+func restartUnbound() error {
+	// Try systemd first
+	if err := exec.Command("systemctl", "restart", "unbound").Run(); err == nil {
+		return nil
+	}
+	
+	// Fallback to service command
+	return exec.Command("service", "unbound", "restart").Run()
+}
+
+func AddDNSZone(zone DNSZone) error {
+	config, err := GetDNSConfiguration()
+	if err != nil {
+		return err
+	}
+	
+	// Add or update zone
+	found := false
+	for i, existingZone := range config.LocalZones {
+		if existingZone.Zone == zone.Zone && existingZone.Type == zone.Type {
+			config.LocalZones[i] = zone
+			found = true
+			break
+		}
+	}
+	
+	if !found {
+		config.LocalZones = append(config.LocalZones, zone)
+	}
+	
+	return SetDNSConfiguration(config)
+}
+
+func RemoveDNSZone(zoneName, recordType string) error {
+	config, err := GetDNSConfiguration()
+	if err != nil {
+		return err
+	}
+	
+	// Remove zone
+	var newZones []DNSZone
 	for _, zone := range config.LocalZones {
-		if zone.Enabled {
-			content.WriteString(fmt.Sprintf("    local-zone: \"%s\" static\n", zone.Zone))
-			for hostname, ip := range zone.Records {
-				content.WriteString(fmt.Sprintf("    local-data: \"%s.%s A %s\"\n", hostname, zone.Zone, ip))
-			}
+		if !(zone.Zone == zoneName && zone.Type == recordType) {
+			newZones = append(newZones, zone)
 		}
 	}
+	
+	config.LocalZones = newZones
+	return SetDNSConfiguration(config)
+}
 
-	// Forward zones
-	content.WriteString("forward-zone:\n")
-	content.WriteString("    name: \".\"\n")
-	for _, resolver := range config.Resolvers {
-		if resolver.Enabled {
-			if resolver.Type == "tls" {
-				content.WriteString(fmt.Sprintf("    forward-tls-upstream: yes\n"))
-				content.WriteString(fmt.Sprintf("    forward-addr: %s@%d\n", resolver.Address, resolver.Port))
-			} else {
-				content.WriteString(fmt.Sprintf("    forward-addr: %s\n", resolver.Address))
-			}
+func AddDNSResolver(resolver DNSResolver) error {
+	config, err := GetDNSConfiguration()
+	if err != nil {
+		return err
+	}
+	
+	// Format resolver address
+	resolverAddr := resolver.Address
+	if resolver.Port != 53 {
+		resolverAddr = fmt.Sprintf("%s:%d", resolver.Address, resolver.Port)
+	}
+	
+	// Add protocol prefix if specified
+	switch resolver.Protocol {
+	case "tcp":
+		resolverAddr = "tcp://" + resolverAddr
+	case "tls":
+		resolverAddr = "tls://" + resolverAddr
+	case "https":
+		resolverAddr = "https://" + resolverAddr
+	}
+	
+	// Add to servers list if not already present
+	for _, server := range config.Servers {
+		if server == resolverAddr {
+			return nil // Already exists
 		}
 	}
-
-	return ioutil.WriteFile(unboundConf, []byte(content.String()), 0644)
+	
+	config.Servers = append(config.Servers, resolverAddr)
+	return SetDNSConfiguration(config)
 }
 
-// AddResolver adds a DNS resolver
-func (d *DNSConfigurator) AddResolver(resolver DNSResolver) error {
-	config, err := d.GetDNSConfiguration()
+func RemoveDNSResolver(address string) error {
+	config, err := GetDNSConfiguration()
 	if err != nil {
 		return err
 	}
-
-	config.Resolvers = append(config.Resolvers, resolver)
-	return d.SetDNSConfiguration(config)
-}
-
-// RemoveResolver removes a DNS resolver
-func (d *DNSConfigurator) RemoveResolver(address string) error {
-	config, err := d.GetDNSConfiguration()
-	if err != nil {
-		return err
-	}
-
-	var filteredResolvers []DNSResolver
-	for _, resolver := range config.Resolvers {
-		if resolver.Address != address {
-			filteredResolvers = append(filteredResolvers, resolver)
+	
+	// Remove server
+	var newServers []string
+	for _, server := range config.Servers {
+		if server != address {
+			newServers = append(newServers, server)
 		}
 	}
-
-	config.Resolvers = filteredResolvers
-	return d.SetDNSConfiguration(config)
+	
+	config.Servers = newServers
+	return SetDNSConfiguration(config)
 }
 
-// AddLocalZone adds a local DNS zone
-func (d *DNSConfigurator) AddLocalZone(zone DNSLocalZone) error {
-	config, err := d.GetDNSConfiguration()
-	if err != nil {
-		return err
-	}
-
-	config.LocalZones = append(config.LocalZones, zone)
-	return d.SetDNSConfiguration(config)
-}
-
-// AddDNSRouting adds DNS routing rule
-func (d *DNSConfigurator) AddDNSRouting(routing DNSRouting) error {
-	config, err := d.GetDNSConfiguration()
-	if err != nil {
-		return err
-	}
-
-	config.Routing = append(config.Routing, routing)
-	return d.SetDNSConfiguration(config)
-}
-
-// TestDNSResolution tests DNS resolution
-func (d *DNSConfigurator) TestDNSResolution(domain string) ([]string, error) {
-	cmd := exec.Command("nslookup", domain)
-	output, err := cmd.Output()
+func GetDNSStatus() (map[string]interface{}, error) {
+	config, err := GetDNSConfiguration()
 	if err != nil {
 		return nil, err
 	}
-
-	var addresses []string
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
-		if strings.Contains(line, "Address:") && !strings.Contains(line, "#") {
-			parts := strings.Split(line, "Address:")
-			if len(parts) > 1 {
-				addr := strings.TrimSpace(parts[1])
-				addresses = append(addresses, addr)
-			}
-		}
-	}
-
-	return addresses, nil
-}
-
-// FlushDNSCache flushes DNS cache
-func (d *DNSConfigurator) FlushDNSCache() error {
-	// Try different methods based on what's available
-	commands := [][]string{
-		{"systemctl", "restart", "systemd-resolved"},
-		{"systemctl", "restart", "dnsmasq"},
-		{"systemctl", "restart", "unbound"},
-		{"service", "dnsmasq", "restart"},
-		{"killall", "-HUP", "dnsmasq"},
-	}
-
-	for _, cmd := range commands {
-		if err := exec.Command(cmd[0], cmd[1:]...).Run(); err == nil {
-			return nil
-		}
-	}
-
-	return fmt.Errorf("failed to flush DNS cache")
-}
-
-// GetDNSStatistics gets DNS query statistics
-func (d *DNSConfigurator) GetDNSStatistics() (map[string]interface{}, error) {
-	stats := make(map[string]interface{})
-
-	// Get dnsmasq statistics if available
-	if d.isDNSMasqRunning() {
-		cmd := exec.Command("killall", "-USR1", "dnsmasq")
-		cmd.Run()
-		
-		// Wait for log to be written
-		time.Sleep(time.Millisecond * 100)
-		
-		// Parse syslog for statistics
-		if logData, err := d.parseDNSMasqLog(); err == nil {
-			stats["dnsmasq"] = logData
-		}
-	}
-
-	// Get unbound statistics if available
-	if d.isUnboundRunning() {
-		cmd := exec.Command("unbound-control", "stats")
-		if output, err := cmd.Output(); err == nil {
-			unboundStats := d.parseUnboundStats(string(output))
-			stats["unbound"] = unboundStats
-		}
-	}
-
-	return stats, nil
-}
-
-// Helper functions
-
-func (d *DNSConfigurator) saveDNSConfig(config *DNSConfiguration) error {
-	if err := os.MkdirAll(d.configPath, 0755); err != nil {
-		return err
-	}
-
-	data, err := json.MarshalIndent(config, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	configFile := filepath.Join(d.configPath, "dns.json")
-	return ioutil.WriteFile(configFile, data, 0644)
-}
-
-func (d *DNSConfigurator) isDNSMasqRunning() bool {
-	cmd := exec.Command("pgrep", "dnsmasq")
-	return cmd.Run() == nil
-}
-
-func (d *DNSConfigurator) isUnboundRunning() bool {
-	cmd := exec.Command("pgrep", "unbound")
-	return cmd.Run() == nil
-}
-
-func (d *DNSConfigurator) restartDNSMasq() error {
-	commands := [][]string{
-		{"systemctl", "restart", "dnsmasq"},
-		{"service", "dnsmasq", "restart"},
-	}
-
-	for _, cmd := range commands {
-		if err := exec.Command(cmd[0], cmd[1:]...).Run(); err == nil {
-			return nil
-		}
-	}
-
-	return fmt.Errorf("failed to restart dnsmasq")
-}
-
-func (d *DNSConfigurator) parseDNSMasqLog() (map[string]interface{}, error) {
-	// Parse syslog for dnsmasq statistics
-	// This is a simplified implementation
-	return map[string]interface{}{
-		"queries":     0,
-		"cache_hits":  0,
-		"cache_miss":  0,
-		"blocked":     0,
-	}, nil
-}
-
-func (d *DNSConfigurator) parseUnboundStats(output string) map[string]interface{} {
-	stats := make(map[string]interface{})
 	
-	lines := strings.Split(output, "\n")
-	for _, line := range lines {
-		if strings.Contains(line, "=") {
-			parts := strings.SplitN(line, "=", 2)
-			if len(parts) == 2 {
-				key := strings.TrimSpace(parts[0])
-				value := strings.TrimSpace(parts[1])
-				stats[key] = value
-			}
-		}
+	status := map[string]interface{}{
+		"mode":        config.Mode,
+		"enabled":     config.Enabled,
+		"servers":     config.Servers,
+		"local_zones": len(config.LocalZones),
+		"service_status": getDNSServiceStatus(config.Mode),
 	}
+	
+	return status, nil
+}
 
-	return stats
+func getDNSServiceStatus(mode string) string {
+	switch mode {
+	case "proxy":
+		if isDNSMasqRunning() {
+			return "running"
+		}
+		return "stopped"
+	case "forward":
+		if isUnboundRunning() {
+			return "running"
+		}
+		return "stopped"
+	default:
+		return "direct"
+	}
 }

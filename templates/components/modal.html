@@ -1,41 +1,48 @@
-<!-- Generic Modal Component -->
-<div class="modal modal-blur fade" id="generic-modal" tabindex="-1" role="dialog" aria-hidden="true">
+<!-- Generic Modal for CRUD operations -->
+<div class="modal modal-blur fade" id="genericModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modal-title">Modal Title</h5>
+                <h5 class="modal-title" id="modalTitle">Configure Item</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body" id="modal-body">
-                <!-- Dynamic content will be loaded here -->
-            </div>
-            <div class="modal-footer" id="modal-footer">
-                <a href="#" class="btn btn-link link-secondary" data-bs-dismiss="modal">
-                    Cancel
-                </a>
-                <a href="#" class="btn btn-primary ms-auto" id="modal-save-btn">
-                    Save changes
-                </a>
-            </div>
+            <form id="modalForm">
+                <div class="modal-body" id="modalBody">
+                    <!-- Dynamic content will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <a href="#" class="btn btn-link link-secondary" data-bs-dismiss="modal">
+                        Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary ms-auto" id="modalSubmitBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M12 5l0 14"/>
+                            <path d="M5 12l14 0"/>
+                        </svg>
+                        Save
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
-<!-- Interface Configuration Modal -->
-<div class="modal modal-blur fade" id="interface-modal" tabindex="-1" role="dialog" aria-hidden="true">
+<!-- Network Interface Modal -->
+<div class="modal modal-blur fade" id="interfaceModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Configure Network Interface</h5>
+                <h5 class="modal-title">Network Interface Configuration</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="interface-form">
+            <form id="interfaceForm">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-lg-6">
                             <div class="mb-3">
                                 <label class="form-label">Interface Name</label>
-                                <input type="text" class="form-control" name="name" placeholder="eth0" required>
+                                <input type="text" class="form-control" name="name" placeholder="eth0, wlan0, br0..." required>
                             </div>
                         </div>
                         <div class="col-lg-6">
@@ -44,42 +51,69 @@
                                 <select class="form-select" name="type" required>
                                     <option value="">Select type...</option>
                                     <option value="ethernet">Ethernet</option>
-                                    <option value="wireless">Wireless</option>
+                                    <option value="wifi">WiFi</option>
                                     <option value="bridge">Bridge</option>
                                     <option value="vlan">VLAN</option>
                                     <option value="vpn">VPN</option>
+                                    <option value="tunnel">Tunnel</option>
                                 </select>
                             </div>
                         </div>
                     </div>
+                    
+                    <div id="typeSpecificConfig">
+                        <!-- Dynamic configuration based on interface type -->
+                    </div>
+                    
                     <div class="row">
                         <div class="col-lg-6">
                             <div class="mb-3">
-                                <label class="form-label">IP Address</label>
-                                <input type="text" class="form-control" name="ip_address" placeholder="192.168.1.1">
-                                <small class="form-hint">Leave empty for DHCP</small>
+                                <label class="form-label">IP Configuration</label>
+                                <select class="form-select" name="ip_method">
+                                    <option value="dhcp">DHCP</option>
+                                    <option value="static">Static IP</option>
+                                    <option value="none">No IP</option>
+                                </select>
                             </div>
                         </div>
                         <div class="col-lg-6">
                             <div class="mb-3">
-                                <label class="form-label">Netmask</label>
-                                <input type="text" class="form-control" name="netmask" placeholder="255.255.255.0">
+                                <label class="form-label">Status</label>
+                                <label class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="enabled" checked>
+                                    <span class="form-check-label">Enabled</span>
+                                </label>
                             </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-lg-6">
-                            <div class="mb-3">
-                                <label class="form-label">Gateway</label>
-                                <input type="text" class="form-control" name="gateway" placeholder="192.168.1.1">
+                    
+                    <div id="staticIpConfig" style="display: none;">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <label class="form-label">IP Address</label>
+                                    <input type="text" class="form-control" name="ip_address" placeholder="192.168.1.1">
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Subnet Mask</label>
+                                    <input type="text" class="form-control" name="netmask" placeholder="255.255.255.0">
+                                </div>
                             </div>
                         </div>
-                        <div class="col-lg-6">
-                            <div class="mb-3">
-                                <label class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="enabled" checked>
-                                    <span class="form-check-label">Enable Interface</span>
-                                </label>
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Gateway</label>
+                                    <input type="text" class="form-control" name="gateway" placeholder="192.168.1.1">
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="mb-3">
+                                    <label class="form-label">DNS Servers</label>
+                                    <input type="text" class="form-control" name="dns" placeholder="8.8.8.8, 8.8.4.4">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -94,57 +128,59 @@
 </div>
 
 <!-- Static Route Modal -->
-<div class="modal modal-blur fade" id="route-modal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal modal-blur fade" id="routeModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Add Static Route</h5>
+                <h5 class="modal-title">Static Route Configuration</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="route-form">
+            <form id="routeForm">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-lg-6">
                             <div class="mb-3">
-                                <label class="form-label">Destination</label>
-                                <input type="text" class="form-control" name="destination" placeholder="192.168.2.0" required>
+                                <label class="form-label">Destination Network</label>
+                                <input type="text" class="form-control" name="destination" placeholder="192.168.2.0/24" required>
+                                <small class="form-hint">Network address with CIDR notation</small>
                             </div>
                         </div>
-                        <div class="col-lg-6">
-                            <div class="mb-3">
-                                <label class="form-label">Netmask</label>
-                                <input type="text" class="form-control" name="netmask" placeholder="255.255.255.0" required>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
                         <div class="col-lg-6">
                             <div class="mb-3">
                                 <label class="form-label">Gateway</label>
                                 <input type="text" class="form-control" name="gateway" placeholder="192.168.1.1" required>
+                                <small class="form-hint">Next hop router IP address</small>
                             </div>
                         </div>
+                    </div>
+                    <div class="row">
                         <div class="col-lg-6">
                             <div class="mb-3">
                                 <label class="form-label">Interface</label>
                                 <select class="form-select" name="interface" required>
                                     <option value="">Select interface...</option>
+                                    <!-- Will be populated dynamically -->
                                 </select>
                             </div>
                         </div>
-                    </div>
-                    <div class="row">
                         <div class="col-lg-6">
                             <div class="mb-3">
                                 <label class="form-label">Metric</label>
-                                <input type="number" class="form-control" name="metric" placeholder="1" value="1">
+                                <input type="number" class="form-control" name="metric" value="0" min="0" max="9999">
+                                <small class="form-hint">Route priority (lower = higher priority)</small>
                             </div>
                         </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-check">
+                            <input class="form-check-input" type="checkbox" name="enabled" checked>
+                            <span class="form-check-label">Enable this route</span>
+                        </label>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <a href="#" class="btn btn-link link-secondary" data-bs-dismiss="modal">Cancel</a>
-                    <button type="submit" class="btn btn-primary ms-auto">Add Route</button>
+                    <button type="submit" class="btn btn-primary ms-auto">Save Route</button>
                 </div>
             </form>
         </div>
@@ -152,14 +188,14 @@
 </div>
 
 <!-- Firewall Rule Modal -->
-<div class="modal modal-blur fade" id="firewall-rule-modal" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal modal-blur fade" id="firewallModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Add Firewall Rule</h5>
+                <h5 class="modal-title">Firewall Rule Configuration</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="firewall-rule-form">
+            <form id="firewallForm">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-lg-6">
@@ -173,63 +209,29 @@
                                 <label class="form-label">Chain</label>
                                 <select class="form-select" name="chain" required>
                                     <option value="">Select chain...</option>
-                                    <option value="INPUT">INPUT</option>
-                                    <option value="OUTPUT">OUTPUT</option>
-                                    <option value="FORWARD">FORWARD</option>
+                                    <!-- Will be populated based on firewall backend -->
                                 </select>
                             </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-lg-6">
-                            <div class="mb-3">
-                                <label class="form-label">Action</label>
-                                <select class="form-select" name="action" required>
-                                    <option value="">Select action...</option>
-                                    <option value="ACCEPT">ACCEPT</option>
-                                    <option value="DROP">DROP</option>
-                                    <option value="REJECT">REJECT</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="mb-3">
-                                <label class="form-label">Protocol</label>
-                                <select class="form-select" name="protocol">
-                                    <option value="">All</option>
-                                    <option value="tcp">TCP</option>
-                                    <option value="udp">UDP</option>
-                                    <option value="icmp">ICMP</option>
-                                </select>
-                            </div>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rule Text</label>
+                        <textarea class="form-control" name="rule_text" rows="3" placeholder="-p tcp --dport 22 -j ACCEPT" required></textarea>
+                        <small class="form-hint">Raw firewall rule syntax</small>
                     </div>
                     <div class="row">
                         <div class="col-lg-6">
                             <div class="mb-3">
-                                <label class="form-label">Source</label>
-                                <input type="text" class="form-control" name="source" placeholder="192.168.1.0/24">
+                                <label class="form-label">Position</label>
+                                <input type="number" class="form-control" name="position" value="0" min="0">
+                                <small class="form-hint">Rule insertion position (0 = append)</small>
                             </div>
                         </div>
                         <div class="col-lg-6">
                             <div class="mb-3">
-                                <label class="form-label">Destination</label>
-                                <input type="text" class="form-control" name="destination" placeholder="192.168.2.0/24">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-lg-6">
-                            <div class="mb-3">
-                                <label class="form-label">Port</label>
-                                <input type="text" class="form-control" name="port" placeholder="22 or 80:443">
-                            </div>
-                        </div>
-                        <div class="col-lg-6">
-                            <div class="mb-3">
-                                <label class="form-check form-switch">
+                                <label class="form-check">
                                     <input class="form-check-input" type="checkbox" name="enabled" checked>
-                                    <span class="form-check-label">Enable Rule</span>
+                                    <span class="form-check-label">Enable this rule</span>
                                 </label>
                             </div>
                         </div>
@@ -237,39 +239,58 @@
                 </div>
                 <div class="modal-footer">
                     <a href="#" class="btn btn-link link-secondary" data-bs-dismiss="modal">Cancel</a>
-                    <button type="submit" class="btn btn-primary ms-auto">Add Rule</button>
+                    <button type="submit" class="btn btn-primary ms-auto">Save Rule</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- Password Change Modal -->
-<div class="modal modal-blur fade" id="password-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
+<!-- DNS Zone Modal -->
+<div class="modal modal-blur fade" id="dnsZoneModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Change Password</h5>
+                <h5 class="modal-title">DNS Local Zone Configuration</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="password-form">
+            <form id="dnsZoneForm">
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Current Password</label>
-                        <input type="password" class="form-control" name="current_password" required>
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Zone/Domain</label>
+                                <input type="text" class="form-control" name="zone" placeholder="router.local" required>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="mb-3">
+                                <label class="form-label">Record Type</label>
+                                <select class="form-select" name="record_type" required>
+                                    <option value="A">A (IPv4 Address)</option>
+                                    <option value="AAAA">AAAA (IPv6 Address)</option>
+                                    <option value="CNAME">CNAME (Alias)</option>
+                                    <option value="MX">MX (Mail Exchange)</option>
+                                    <option value="TXT">TXT (Text Record)</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">New Password</label>
-                        <input type="password" class="form-control" name="new_password" required>
+                        <label class="form-label">Value</label>
+                        <input type="text" class="form-control" name="value" placeholder="192.168.1.1" required>
+                        <small class="form-hint">IP address, hostname, or record value</small>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Confirm New Password</label>
-                        <input type="password" class="form-control" name="confirm_password" required>
+                        <label class="form-check">
+                            <input class="form-check-input" type="checkbox" name="enabled" checked>
+                            <span class="form-check-label">Enable this zone</span>
+                        </label>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <a href="#" class="btn btn-link link-secondary" data-bs-dismiss="modal">Cancel</a>
-                    <button type="submit" class="btn btn-primary ms-auto">Change Password</button>
+                    <button type="submit" class="btn btn-primary ms-auto">Save Zone</button>
                 </div>
             </form>
         </div>

@@ -1,5 +1,4 @@
 {{define "content"}}
-<!-- Page header -->
 <div class="page-header d-print-none">
     <div class="container-xl">
         <div class="row g-2 align-items-center">
@@ -10,64 +9,117 @@
                         <li class="breadcrumb-item active" aria-current="page">Routing</li>
                     </ol>
                 </nav>
-                <h2 class="page-title">
-                    Routing Configuration
-                </h2>
+                <h2 class="page-title">Routing Configuration</h2>
+                <div class="text-muted mt-1">Manage static routes and UPnP port mapping</div>
             </div>
             <div class="col-auto ms-auto d-print-none">
                 <div class="btn-list">
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#route-modal">
+                    <a href="#" class="btn btn-outline-secondary" onclick="refreshRoutes()">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/>
+                            <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>
+                        </svg>
+                        Refresh
+                    </a>
+                    <a href="#" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#routeModal">
                         <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
                             <line x1="12" y1="5" x2="12" y2="19"/>
                             <line x1="5" y1="12" x2="19" y2="12"/>
                         </svg>
-                        Add Route
-                    </button>
+                        Add Static Route
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 </div>
-<!-- Page body -->
+
 <div class="page-body">
     <div class="container-xl">
-        <!-- Tabs -->
+        <!-- Routing Status -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Routing Status</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-lg-3">
+                                <div class="text-muted">Default Gateway</div>
+                                <div class="h3" id="defaultGateway">Loading...</div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="text-muted">WAN Interface</div>
+                                <div class="h3" id="wanInterface">-</div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="text-muted">Static Routes</div>
+                                <div class="h3" id="staticRoutesCount">{{len .Routes}}</div>
+                            </div>
+                            <div class="col-lg-3">
+                                <div class="text-muted">UPnP Status</div>
+                                <div class="h3">
+                                    <span class="badge bg-secondary" id="upnpStatus">Disabled</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Routing Configuration Tabs -->
         <div class="card">
             <div class="card-header">
-                <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <a href="#tabs-static-routes" class="nav-link active" data-bs-toggle="tab" aria-selected="true" role="tab">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <circle cx="6" cy="19" r="2"/>
-                                <circle cx="18" cy="5" r="2"/>
-                                <path d="m8 19l8 0"/>
-                                <path d="m16 5l-8 0"/>
-                                <path d="m12 5v14"/>
-                            </svg>
-                            Static Routes
-                        </a>
+                <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs">
+                    <li class="nav-item">
+                        <a href="#tabs-static-routes" class="nav-link active" data-bs-toggle="tab">Static Routes</a>
                     </li>
-                    <li class="nav-item" role="presentation">
-                        <a href="#tabs-upnp" class="nav-link" data-bs-toggle="tab" aria-selected="false" role="tab" tabindex="-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                <path d="M9 12l-4 -4l4 -4"/>
-                                <path d="M15 12l4 -4l-4 -4"/>
-                                <path d="M12 3v18"/>
-                            </svg>
-                            UPnP IGD & PCP
-                        </a>
+                    <li class="nav-item">
+                        <a href="#tabs-upnp" class="nav-link" data-bs-toggle="tab">UPnP & PCP</a>
                     </li>
                 </ul>
             </div>
             <div class="card-body">
                 <div class="tab-content">
-                    <!-- Static Routes Tab -->
-                    <div class="tab-pane active show" id="tabs-static-routes" role="tabpanel">
+                    <!-- Static Routes -->
+                    <div class="tab-pane active show" id="tabs-static-routes">
+                        <!-- System Routes -->
+                        <h4>System Routes</h4>
+                        <div class="table-responsive mb-4">
+                            <table class="table table-vcenter">
+                                <thead>
+                                    <tr>
+                                        <th>Destination</th>
+                                        <th>Gateway</th>
+                                        <th>Interface</th>
+                                        <th>Metric</th>
+                                        <th>Type</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="systemRoutesTable">
+                                    <!-- Will be populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Static Routes -->
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4>Static Routes</h4>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#routeModal">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                    <line x1="12" y1="5" x2="12" y2="19"/>
+                                    <line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                                Add Route
+                            </button>
+                        </div>
                         <div class="table-responsive">
-                            <table class="table table-vcenter card-table">
+                            <table class="table table-vcenter">
                                 <thead>
                                     <tr>
                                         <th>Destination</th>
@@ -78,212 +130,185 @@
                                         <th class="w-1">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody id="static-routes">
-                                    {{if .routes}}
-                                        {{range .routes}}
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <div>
-                                                        <strong>{{.Destination}}</strong>
-                                                        {{if .Netmask}}<small class="text-muted d-block">{{.Netmask}}</small>{{end}}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>{{if .Gateway}}{{.Gateway}}{{else}}-{{end}}</td>
-                                            <td>
-                                                <span class="badge bg-blue">{{.Interface}}</span>
-                                            </td>
-                                            <td>{{.Metric}}</td>
-                                            <td>
-                                                <span class="status status-green">
-                                                    <span class="status-dot status-dot-animated"></span>
-                                                    Active
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div class="btn-list flex-nowrap">
-                                                    <button class="btn btn-white btn-sm" onclick="editRoute({{.ID}})">Edit</button>
-                                                    <button class="btn btn-white btn-sm" onclick="deleteRoute({{.ID}})">Delete</button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        {{end}}
+                                <tbody id="staticRoutesTable">
+                                    {{range .Routes}}
+                                    <tr>
+                                        <td><code>{{.Destination}}</code></td>
+                                        <td><code>{{.Gateway}}</code></td>
+                                        <td>{{.Interface}}</td>
+                                        <td>{{.Metric}}</td>
+                                        <td>
+                                            {{if .Enabled}}
+                                            <span class="badge bg-success">Active</span>
+                                            {{else}}
+                                            <span class="badge bg-secondary">Inactive</span>
+                                            {{end}}
+                                        </td>
+                                        <td>
+                                            <div class="btn-list flex-nowrap">
+                                                <a href="#" class="btn btn-sm btn-outline-primary" onclick="editRoute({{.ID}})">Edit</a>
+                                                <a href="#" class="btn btn-sm btn-outline-danger" onclick="deleteRoute({{.ID}})">Delete</a>
+                                            </div>
+                                        </td>
+                                    </tr>
                                     {{else}}
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted">Loading routes...</td>
+                                        <td colspan="6" class="text-center text-muted">No static routes configured</td>
                                     </tr>
                                     {{end}}
                                 </tbody>
                             </table>
                         </div>
-                        
-                        <!-- Current Routing Table -->
+                    </div>
+
+                    <!-- UPnP Configuration -->
+                    <div class="tab-pane" id="tabs-upnp">
+                        <form id="upnpConfigForm">
+                            <div class="mb-3">
+                                <label class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="upnp_enabled">
+                                    <span class="form-check-label">Enable UPnP IGD (Internet Gateway Device)</span>
+                                </label>
+                                <small class="form-hint">Allow devices to automatically configure port forwarding</small>
+                            </div>
+
+                            <div id="upnpSettings" style="display: none;">
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="allow_port_mapping" checked>
+                                                <span class="form-check-label">Allow Port Mapping</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="allow_pcp_natpmp">
+                                                <span class="form-check-label">Allow PCP/NAT-PMP Port Mapping</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">External Interface</label>
+                                    <select class="form-select" name="external_interface">
+                                        <option value="">Auto-detect</option>
+                                        <option value="eth0">eth0</option>
+                                        <option value="eth1">eth1</option>
+                                        <option value="ppp0">ppp0</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Internal Interface</label>
+                                    <select class="form-select" name="internal_interface">
+                                        <option value="br0">br0</option>
+                                        <option value="eth0">eth0</option>
+                                        <option value="wlan0">wlan0</option>
+                                    </select>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Lease Duration</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" name="lease_duration" value="86400" min="600">
+                                                <span class="input-group-text">seconds</span>
+                                            </div>
+                                            <small class="form-hint">Maximum time for port mappings</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="mb-3">
+                                            <label class="form-label">Cleanup Interval</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" name="cleanup_interval" value="600" min="60">
+                                                <span class="input-group-text">seconds</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="traffic_shaping">
+                                        <span class="form-check-label">Enable Traffic Shaping</span>
+                                    </label>
+                                    <small class="form-hint">Apply bandwidth limits to UPnP traffic</small>
+                                </div>
+                            </div>
+
+                            <div class="form-footer">
+                                <button type="submit" class="btn btn-primary">Save UPnP Configuration</button>
+                            </div>
+                        </form>
+
+                        <!-- STUN Server Configuration -->
                         <div class="mt-4">
-                            <h4>Current Routing Table</h4>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4>STUN Servers</h4>
+                                <button type="button" class="btn btn-outline-primary" onclick="addSTUNServer()">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <line x1="12" y1="5" x2="12" y2="19"/>
+                                        <line x1="5" y1="12" x2="19" y2="12"/>
+                                    </svg>
+                                    Add STUN Server
+                                </button>
+                            </div>
                             <div class="table-responsive">
-                                <table class="table table-sm">
+                                <table class="table table-vcenter">
                                     <thead>
                                         <tr>
-                                            <th>Destination</th>
-                                            <th>Gateway</th>
-                                            <th>Genmask</th>
-                                            <th>Flags</th>
-                                            <th>Metric</th>
-                                            <th>Interface</th>
+                                            <th>Server Address</th>
+                                            <th>Port</th>
+                                            <th>Status</th>
+                                            <th class="w-1">Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="routing-table">
+                                    <tbody id="stunServersTable">
                                         <tr>
-                                            <td colspan="6" class="text-center text-muted">Loading routing table...</td>
+                                            <td><code>stun.l.google.com</code></td>
+                                            <td>19302</td>
+                                            <td><span class="badge bg-success">Active</span></td>
+                                            <td>
+                                                <div class="btn-list flex-nowrap">
+                                                    <a href="#" class="btn btn-sm btn-outline-primary">Test</a>
+                                                    <a href="#" class="btn btn-sm btn-outline-danger">Delete</a>
+                                                </div>
+                                            </td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- UPnP IGD & PCP Tab -->
-                    <div class="tab-pane" id="tabs-upnp" role="tabpanel">
-                        <form id="upnp-form">
-                            <div class="row mb-3">
-                                <div class="col-md-12">
-                                    <label class="form-check form-switch form-check-lg">
-                                        <input class="form-check-input" type="checkbox" name="upnp_enabled" id="upnp-enabled">
-                                        <span class="form-check-label form-check-label-lg">Enable UPnP IGD Port Mapping Service</span>
-                                    </label>
-                                    <small class="form-hint">Allows devices to automatically configure port forwarding</small>
-                                </div>
+
+                        <!-- Active Port Mappings -->
+                        <div class="mt-4">
+                            <h4>Active Port Mappings</h4>
+                            <div class="table-responsive">
+                                <table class="table table-vcenter">
+                                    <thead>
+                                        <tr>
+                                            <th>Client IP</th>
+                                            <th>Internal Port</th>
+                                            <th>External Port</th>
+                                            <th>Protocol</th>
+                                            <th>Description</th>
+                                            <th>Expires</th>
+                                            <th class="w-1">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="portMappingsTable">
+                                        <!-- Will be populated dynamically -->
+                                    </tbody>
+                                </table>
                             </div>
-                            
-                            <div id="upnp-config" class="d-none">
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <label class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" name="pcp_enabled">
-                                            <span class="form-check-label">Allow PCP/NAT-PMP Port Mapping</span>
-                                        </label>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" name="stun_enabled">
-                                            <span class="form-check-label">Enable STUN</span>
-                                        </label>
-                                    </div>
-                                </div>
-                                
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">External Interface</label>
-                                        <select class="form-select" name="external_interface">
-                                            <option value="">Select WAN interface...</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Internal Subnet</label>
-                                        <input type="text" class="form-control" name="internal_subnet" value="192.168.1.0/24" placeholder="192.168.1.0/24">
-                                    </div>
-                                </div>
-                                
-                                <div class="row mb-3">
-                                    <div class="col-md-6">
-                                        <label class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" name="traffic_shaping">
-                                            <span class="form-check-label">Enable Traffic Shaping</span>
-                                        </label>
-                                    </div>
-                                </div>
-                                
-                                <div id="traffic-shaping-config" class="d-none">
-                                    <div class="row mb-3">
-                                        <div class="col-md-6">
-                                            <label class="form-label">Upload Bandwidth</label>
-                                            <div class="input-group">
-                                                <input type="number" class="form-control" name="upload_bandwidth" placeholder="1000">
-                                                <span class="input-group-text">kbps</span>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="form-label">Download Bandwidth</label>
-                                            <div class="input-group">
-                                                <input type="number" class="form-control" name="download_bandwidth" placeholder="10000">
-                                                <span class="input-group-text">kbps</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- STUN Servers -->
-                                <div class="row mb-3">
-                                    <div class="col-md-12">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <label class="form-label mb-0">STUN Servers</label>
-                                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="addStunServer()">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                                    <line x1="12" y1="5" x2="12" y2="19"/>
-                                                    <line x1="5" y1="12" x2="19" y2="12"/>
-                                                </svg>
-                                                Add STUN Server
-                                            </button>
-                                        </div>
-                                        <div class="table-responsive">
-                                            <table class="table table-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Server</th>
-                                                        <th>Port</th>
-                                                        <th>Protocol</th>
-                                                        <th class="w-1">Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="stun-servers">
-                                                    <tr>
-                                                        <td>stun.l.google.com</td>
-                                                        <td>19302</td>
-                                                        <td>UDP</td>
-                                                        <td>
-                                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeStunServer(this)">Remove</button>
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Port Mappings -->
-                                <div class="row mb-3">
-                                    <div class="col-md-12">
-                                        <h4>Active Port Mappings</h4>
-                                        <div class="table-responsive">
-                                            <table class="table table-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Protocol</th>
-                                                        <th>External Port</th>
-                                                        <th>Internal IP</th>
-                                                        <th>Internal Port</th>
-                                                        <th>Description</th>
-                                                        <th>Lease Time</th>
-                                                        <th class="w-1">Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="port-mappings">
-                                                    <tr>
-                                                        <td colspan="7" class="text-center text-muted">No active port mappings</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="form-footer">
-                                <button type="submit" class="btn btn-primary">Save UPnP Configuration</button>
-                            </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -292,235 +317,333 @@
 </div>
 
 <script>
-// Handle UPnP toggle
-document.getElementById('upnp-enabled').addEventListener('change', function() {
-    const config = document.getElementById('upnp-config');
-    if (this.checked) {
-        config.classList.remove('d-none');
-        loadUPnPConfig();
-    } else {
-        config.classList.add('d-none');
-    }
+// Handle UPnP enable/disable
+document.querySelector('input[name="upnp_enabled"]').addEventListener('change', function() {
+    const upnpSettings = document.getElementById('upnpSettings');
+    upnpSettings.style.display = this.checked ? 'block' : 'none';
 });
 
-// Handle traffic shaping toggle
-document.querySelector('input[name="traffic_shaping"]').addEventListener('change', function() {
-    const config = document.getElementById('traffic-shaping-config');
-    if (this.checked) {
-        config.classList.remove('d-none');
-    } else {
-        config.classList.add('d-none');
+// UPnP configuration form
+document.getElementById('upnpConfigForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {};
+    
+    for (let [key, value] of formData.entries()) {
+        if (this.elements[key].type === 'checkbox') {
+            data[key] = this.elements[key].checked;
+        } else {
+            data[key] = value;
+        }
     }
+    
+    fetch('/network/api/routing/upnp', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', 'UPnP configuration saved successfully', 'success');
+            updateUPnPStatus();
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to save UPnP configuration', 'danger');
+        console.error('Error:', error);
+    });
 });
 
-function loadUPnPConfig() {
-    // Load available interfaces for UPnP
-    fetch('/api/network/interfaces')
+function refreshRoutes() {
+    loadSystemRoutes();
+    loadStaticRoutes();
+    loadPortMappings();
+}
+
+function loadSystemRoutes() {
+    fetch('/network/api/routing/system')
         .then(response => response.json())
-        .then(interfaces => {
-            const select = document.querySelector('select[name="external_interface"]');
-            select.innerHTML = '<option value="">Select WAN interface...</option>';
+        .then(data => {
+            const tbody = document.getElementById('systemRoutesTable');
+            tbody.innerHTML = '';
             
-            interfaces.filter(iface => iface.type === 'ethernet' || iface.type === 'wireless').forEach(iface => {
-                const option = document.createElement('option');
-                option.value = iface.name;
-                option.textContent = `${iface.name} (${iface.ip_address || 'No IP'})`;
-                select.appendChild(option);
-            });
+            if (data.routes && data.routes.length > 0) {
+                data.routes.forEach(route => {
+                    const row = document.createElement('tr');
+                    
+                    let typeClass = 'secondary';
+                    let typeText = route.protocol || 'static';
+                    
+                    if (route.destination === '0.0.0.0/0' || route.destination === 'default') {
+                        typeClass = 'primary';
+                        typeText = 'default';
+                        
+                        // Update status display
+                        document.getElementById('defaultGateway').textContent = route.gateway || '-';
+                        document.getElementById('wanInterface').textContent = route.interface || '-';
+                    } else if (route.protocol === 'kernel') {
+                        typeClass = 'info';
+                        typeText = 'kernel';
+                    } else if (route.protocol === 'connected') {
+                        typeClass = 'success';
+                        typeText = 'connected';
+                    }
+                    
+                    row.innerHTML = `
+                        <td><code>${route.destination}</code></td>
+                        <td><code>${route.gateway || '-'}</code></td>
+                        <td>${route.interface || '-'}</td>
+                        <td>${route.metric || '0'}</td>
+                        <td><span class="badge bg-${typeClass}">${typeText}</span></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No system routes found</td></tr>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading system routes:', error);
         });
 }
 
-function loadRoutingTable() {
-    fetch('/api/network/routing/table')
+function loadStaticRoutes() {
+    fetch('/network/api/routing/static')
         .then(response => response.json())
-        .then(routes => {
-            const tbody = document.getElementById('routing-table');
+        .then(data => {
+            const tbody = document.getElementById('staticRoutesTable');
             tbody.innerHTML = '';
             
-            if (routes.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No routes in table</td></tr>';
+            document.getElementById('staticRoutesCount').textContent = data.routes ? data.routes.length : 0;
+            
+            if (data.routes && data.routes.length > 0) {
+                data.routes.forEach(route => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><code>${route.destination}</code></td>
+                        <td><code>${route.gateway}</code></td>
+                        <td>${route.interface}</td>
+                        <td>${route.metric}</td>
+                        <td>
+                            ${route.enabled ? 
+                                '<span class="badge bg-success">Active</span>' : 
+                                '<span class="badge bg-secondary">Inactive</span>'
+                            }
+                        </td>
+                        <td>
+                            <div class="btn-list flex-nowrap">
+                                <a href="#" class="btn btn-sm btn-outline-primary" onclick="editRoute(${route.id})">Edit</a>
+                                <a href="#" class="btn btn-sm btn-outline-danger" onclick="deleteRoute(${route.id})">Delete</a>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No static routes configured</td></tr>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading static routes:', error);
+        });
+}
+
+function editRoute(id) {
+    fetch(`/network/api/routes/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert('Error', data.error, 'danger');
                 return;
             }
             
-            routes.forEach(route => {
-                const row = tbody.insertRow();
-                row.innerHTML = `
-                    <td>${route.destination}</td>
-                    <td>${route.gateway || '*'}</td>
-                    <td>${route.genmask || '0.0.0.0'}</td>
-                    <td>${route.flags || 'U'}</td>
-                    <td>${route.metric || '0'}</td>
-                    <td>${route.interface}</td>
-                `;
-            });
-        })
-        .catch(error => {
-            console.error('Error loading routing table:', error);
-            document.getElementById('routing-table').innerHTML = 
-                '<tr><td colspan="6" class="text-center text-muted text-red">Error loading routing table</td></tr>';
-        });
-}
-
-function addStunServer() {
-    const server = prompt('Enter STUN server address:');
-    const port = prompt('Enter port:', '19302');
-    const protocol = prompt('Enter protocol (UDP/TCP):', 'UDP');
-    
-    if (server && port && protocol) {
-        const tbody = document.getElementById('stun-servers');
-        const row = tbody.insertRow();
-        row.innerHTML = `
-            <td>${server}</td>
-            <td>${port}</td>
-            <td>${protocol}</td>
-            <td>
-                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeStunServer(this)">Remove</button>
-            </td>
-        `;
-    }
-}
-
-function removeStunServer(button) {
-    if (confirm('Are you sure you want to remove this STUN server?')) {
-        button.closest('tr').remove();
-    }
-}
-
-function editRoute(routeId) {
-    // Load route data and populate modal
-    fetch(`/api/network/routing/routes/${routeId}`)
-        .then(response => response.json())
-        .then(route => {
-            const modal = new bootstrap.Modal(document.getElementById('route-modal'));
-            const form = document.getElementById('route-form');
+            // Populate modal with route data
+            const form = document.getElementById('routeForm');
+            form.elements.destination.value = data.destination || '';
+            form.elements.gateway.value = data.gateway || '';
+            form.elements.interface.value = data.interface || '';
+            form.elements.metric.value = data.metric || 0;
+            form.elements.enabled.checked = data.enabled || false;
             
-            form.elements['destination'].value = route.destination;
-            form.elements['netmask'].value = route.netmask;
-            form.elements['gateway'].value = route.gateway;
-            form.elements['metric'].value = route.metric;
+            // Set form for update
+            form.setAttribute('data-action', 'update');
+            form.setAttribute('data-id', id);
             
-            // Load available interfaces
-            fetch('/api/network/interfaces')
-                .then(response => response.json())
-                .then(interfaces => {
-                    const select = form.elements['interface'];
-                    select.innerHTML = '<option value="">Select interface...</option>';
-                    interfaces.forEach(iface => {
-                        const option = document.createElement('option');
-                        option.value = iface.name;
-                        option.textContent = iface.name;
-                        if (iface.name === route.interface) {
-                            option.selected = true;
-                        }
-                        select.appendChild(option);
-                    });
-                });
-            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('routeModal'));
             modal.show();
         })
         .catch(error => {
-            alert('Error loading route: ' + error);
+            showAlert('Error', 'Failed to load route data', 'danger');
+            console.error('Error:', error);
         });
 }
 
-function deleteRoute(routeId) {
-    if (confirm('Are you sure you want to delete this route?')) {
-        fetch(`/api/network/routing/routes/${routeId}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.error) {
-                alert('Error: ' + result.error);
-            } else {
-                location.reload();
-            }
-        })
-        .catch(error => alert('Error deleting route: ' + error));
+function deleteRoute(id) {
+    if (!confirm('Are you sure you want to delete this static route?')) {
+        return;
     }
+    
+    fetch(`/network/api/routes/${id}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', 'Static route deleted successfully', 'success');
+            loadStaticRoutes();
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to delete route', 'danger');
+        console.error('Error:', error);
+    });
 }
 
-// Handle route form submission
-document.getElementById('route-form').addEventListener('submit', function(e) {
-    e.preventDefault();
+function addSTUNServer() {
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('genericModal'));
     
-    const formData = new FormData(this);
-    const data = Object.fromEntries(formData.entries());
+    document.getElementById('modalTitle').textContent = 'Add STUN Server';
+    document.getElementById('modalBody').innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">Server Address</label>
+            <input type="text" class="form-control" name="stun_server" placeholder="stun.example.com" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Port</label>
+            <input type="number" class="form-control" name="stun_port" value="3478" min="1" max="65535" required>
+        </div>
+    `;
     
-    fetch('/api/network/routing/routes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert('Error: ' + result.error);
-        } else {
-            bootstrap.Modal.getInstance(document.getElementById('route-modal')).hide();
-            location.reload();
-        }
-    })
-    .catch(error => alert('Error saving route: ' + error));
-});
+    modal.show();
+}
 
-// Handle UPnP form submission
-document.getElementById('upnp-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const data = Object.fromEntries(formData.entries());
-    
-    // Collect STUN servers
-    const stunServers = [];
-    document.querySelectorAll('#stun-servers tr').forEach(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length >= 3) {
-            stunServers.push({
-                server: cells[0].textContent,
-                port: cells[1].textContent,
-                protocol: cells[2].textContent
-            });
-        }
-    });
-    data.stun_servers = stunServers;
-    
-    fetch('/api/network/routing/upnp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.error) {
-            alert('Error: ' + result.error);
-        } else {
-            alert('UPnP configuration saved successfully');
-        }
-    })
-    .catch(error => alert('Error saving UPnP configuration: ' + error));
-});
-
-// Load routing table on page load
-document.addEventListener('DOMContentLoaded', function() {
-    loadRoutingTable();
-    
-    // Load available interfaces for route modal
-    fetch('/api/network/interfaces')
+function loadPortMappings() {
+    fetch('/network/api/routing/upnp/mappings')
         .then(response => response.json())
-        .then(interfaces => {
-            const select = document.querySelector('#route-modal select[name="interface"]');
+        .then(data => {
+            const tbody = document.getElementById('portMappingsTable');
+            tbody.innerHTML = '';
+            
+            if (data.mappings && data.mappings.length > 0) {
+                data.mappings.forEach(mapping => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><code>${mapping.client_ip}</code></td>
+                        <td>${mapping.internal_port}</td>
+                        <td>${mapping.external_port}</td>
+                        <td><span class="badge bg-info">${mapping.protocol.toUpperCase()}</span></td>
+                        <td>${mapping.description || '-'}</td>
+                        <td>${mapping.expires || 'Never'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger" onclick="removePortMapping('${mapping.id}')">Remove</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } else {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No active port mappings</td></tr>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading port mappings:', error);
+        });
+}
+
+function removePortMapping(id) {
+    if (!confirm('Are you sure you want to remove this port mapping?')) {
+        return;
+    }
+    
+    fetch(`/network/api/routing/upnp/mappings/${id}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', 'Port mapping removed successfully', 'success');
+            loadPortMappings();
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to remove port mapping', 'danger');
+        console.error('Error:', error);
+    });
+}
+
+function updateUPnPStatus() {
+    fetch('/network/api/routing/upnp/status')
+        .then(response => response.json())
+        .then(data => {
+            const statusElement = document.getElementById('upnpStatus');
+            if (data.enabled) {
+                statusElement.textContent = 'Enabled';
+                statusElement.className = 'badge bg-success';
+            } else {
+                statusElement.textContent = 'Disabled';
+                statusElement.className = 'badge bg-secondary';
+            }
+            
+            // Update form
+            document.querySelector('input[name="upnp_enabled"]').checked = data.enabled;
+            document.querySelector('input[name="upnp_enabled"]').dispatchEvent(new Event('change'));
+        })
+        .catch(error => {
+            console.error('Error updating UPnP status:', error);
+        });
+}
+
+// Load interfaces for route modal
+function loadAvailableInterfaces() {
+    fetch('/network/api/interfaces')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.querySelector('#routeModal select[name="interface"]');
             if (select) {
-                select.innerHTML = '<option value="">Select interface...</option>';
-                interfaces.forEach(iface => {
+                // Clear existing options
+                while (select.children.length > 1) {
+                    select.removeChild(select.lastChild);
+                }
+                
+                // Add interfaces
+                data.forEach(interface => {
                     const option = document.createElement('option');
-                    option.value = iface.name;
-                    option.textContent = iface.name;
+                    option.value = interface.name;
+                    option.textContent = interface.name;
                     select.appendChild(option);
                 });
             }
+        })
+        .catch(error => {
+            console.error('Error loading interfaces:', error);
         });
+}
+
+// Load initial data
+document.addEventListener('DOMContentLoaded', function() {
+    loadSystemRoutes();
+    loadStaticRoutes();
+    loadPortMappings();
+    updateUPnPStatus();
+    loadAvailableInterfaces();
+    
+    // Set up periodic refresh
+    setInterval(() => {
+        loadPortMappings();
+        updateUPnPStatus();
+    }, 30000); // Refresh every 30 seconds
 });
 </script>
 {{end}}
-{{template "base/layout.html" .}}
+
+{{template "layout.html" .}}

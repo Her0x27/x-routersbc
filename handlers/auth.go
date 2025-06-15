@@ -1,84 +1,98 @@
 package handlers
 
 import (
+	"database/sql"
 	"net/http"
-	"time"
 
-	"github.com/Her0x27/x-routersbc/core"
 	"github.com/labstack/echo/v4"
+	"github.com/Her0x27/x-routersbc/core"
+	"github.com/Her0x27/x-routersbc/utils"
 )
 
-// AuthHandler handles authentication-related requests
 type AuthHandler struct {
-	authService *core.AuthService
+	db *sql.DB
 }
 
-// NewAuthHandler creates a new auth handler
-func NewAuthHandler() *AuthHandler {
-	return &AuthHandler{
-		authService: core.NewAuthService(),
-	}
+func NewAuthHandler(db *sql.DB) *AuthHandler {
+	return &AuthHandler{db: db}
 }
 
-// ShowLogin displays the login page
 func (h *AuthHandler) ShowLogin(c echo.Context) error {
 	return c.Render(http.StatusOK, "login.html", map[string]interface{}{
-		"Title": "Login - RouterSBC",
+		"Title": "Login - Router SBC",
 	})
 }
 
-// Login handles login form submission
 func (h *AuthHandler) Login(c echo.Context) error {
 	username := c.FormValue("username")
 	password := c.FormValue("password")
-
+	
 	if username == "" || password == "" {
-		return c.Render(http.StatusBadRequest, "login.html", map[string]interface{}{
-			"Title": "Login - RouterSBC",
+		return c.Render(http.StatusOK, "login.html", map[string]interface{}{
+			"Title": "Login - Router SBC",
 			"Error": "Username and password are required",
 		})
 	}
-
-	session, err := h.authService.Login(username, password)
+	
+	// Get user from database
+	var userID int
+	var hashedPassword string
+	var firstLogin bool
+	
+	err := h.db.QueryRow(`
+		SELECT id, password_hash, first_login 
+		FROM users 
+		WHERE username = ?
+	`, username).Scan(&userID, &hashedPassword, &firstLogin)
+	
 	if err != nil {
-		return c.Render(http.StatusUnauthorized, "login.html", map[string]interface{}{
-			"Title": "Login - RouterSBC",
-			"Error": "Invalid credentials",
+		if err == sql.ErrNoRows {
+			return c.Render(http.StatusOK, "login.html", map[string]interface{}{
+				"Title": "Login - Router SBC",
+				"Error": "Invalid username or password",
+			})
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Database error",
 		})
 	}
-
-	// Set session cookie
+	
+	// Verify password
+	if !utils.CheckPasswordHash(password, hashedPassword) {
+		return c.Render(http.StatusOK, "login.html", map[string]interface{}{
+			"Title": "Login - Router SBC",
+			"Error": "Invalid username or password",
+		})
+	}
+	
+	// Create session
+	session, err := core.CreateSession(h.db, userID, username, firstLogin)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to create session",
+		})
+	}
+	
+	// Set cookie
 	cookie := &http.Cookie{
 		Name:     "session_id",
 		Value:    session.ID,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, // Set to true for HTTPS
-		SameSite: http.SameSiteLaxMode,
-		Expires:  session.ExpiresAt,
+		MaxAge:   24 * 60 * 60, // 24 hours
 	}
 	c.SetCookie(cookie)
-
-	// Check if first login
-	user, err := h.authService.GetUserByUsername(username)
-	if err == nil && user.FirstLogin {
-		// Redirect to password change with alert
-		return c.Redirect(http.StatusFound, "/?first_login=true")
-	}
-
-	return c.Redirect(http.StatusFound, "/")
+	
+	return c.Redirect(http.StatusFound, "/network")
 }
 
-// Logout handles user logout
 func (h *AuthHandler) Logout(c echo.Context) error {
-	// Get session cookie
 	cookie, err := c.Cookie("session_id")
 	if err == nil {
-		// Delete session from database
-		h.authService.DeleteSession(cookie.Value)
+		core.DeleteSession(h.db, cookie.Value)
 	}
-
-	// Clear session cookie
+	
+	// Clear cookie
 	cookie = &http.Cookie{
 		Name:     "session_id",
 		Value:    "",
@@ -87,50 +101,76 @@ func (h *AuthHandler) Logout(c echo.Context) error {
 		MaxAge:   -1,
 	}
 	c.SetCookie(cookie)
-
+	
 	return c.Redirect(http.StatusFound, "/login")
 }
 
-// ChangePassword handles password change
 func (h *AuthHandler) ChangePassword(c echo.Context) error {
 	session := c.Get("session").(*core.Session)
+	
+	if c.Request().Method == "GET" {
+		return c.Render(http.StatusOK, "system/index.html", map[string]interface{}{
+			"Title":       "System Settings - Router SBC",
+			"Session":     session,
+			"ShowPasswordAlert": session.FirstLogin,
+		})
+	}
+	
 	currentPassword := c.FormValue("current_password")
 	newPassword := c.FormValue("new_password")
 	confirmPassword := c.FormValue("confirm_password")
-
+	
 	if currentPassword == "" || newPassword == "" || confirmPassword == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "All fields are required",
 		})
 	}
-
+	
 	if newPassword != confirmPassword {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "New passwords do not match",
 		})
 	}
-
+	
 	// Verify current password
-	user, err := h.authService.GetUserByUsername("sbc") // For now, assuming single user
+	var hashedPassword string
+	err := h.db.QueryRow(`
+		SELECT password_hash FROM users WHERE id = ?
+	`, session.UserID).Scan(&hashedPassword)
+	
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to get user information",
+			"error": "Database error",
 		})
 	}
-
-	if !h.authService.VerifyPassword(currentPassword, user.PasswordHash) {
-		return c.JSON(http.StatusUnauthorized, map[string]string{
+	
+	if !utils.CheckPasswordHash(currentPassword, hashedPassword) {
+		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "Current password is incorrect",
 		})
 	}
-
-	// Change password
-	if err := h.authService.ChangePassword(session.UserID, newPassword); err != nil {
+	
+	// Hash new password
+	newHashedPassword, err := utils.HashPassword(newPassword)
+	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to change password",
+			"error": "Failed to hash password",
 		})
 	}
-
+	
+	// Update password and mark first login as complete
+	_, err = h.db.Exec(`
+		UPDATE users 
+		SET password_hash = ?, first_login = FALSE 
+		WHERE id = ?
+	`, newHashedPassword, session.UserID)
+	
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to update password",
+		})
+	}
+	
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "Password changed successfully",
 	})

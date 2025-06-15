@@ -1,238 +1,479 @@
-<!-- IPTables Configuration -->
+<!-- IPTables Firewall Configuration -->
 <div class="card">
     <div class="card-header">
-        <h3 class="card-title">IPTables Configuration</h3>
-        <div class="card-actions">
-            <div class="dropdown">
-                <a href="#" class="btn-action dropdown-toggle" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                        <circle cx="12" cy="12" r="1"/>
-                        <circle cx="12" cy="19" r="1"/>
-                        <circle cx="12" cy="5" r="1"/>
-                    </svg>
-                </a>
-                <div class="dropdown-menu dropdown-menu-end">
-                    <a class="dropdown-item" href="#" onclick="exportIPTables()">Export Rules</a>
-                    <a class="dropdown-item" href="#" onclick="importIPTables()">Import Rules</a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item" href="#" onclick="resetToDefaults()">Reset to Defaults</a>
-                </div>
-            </div>
-        </div>
+        <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs">
+            <li class="nav-item">
+                <a href="#tabs-filter" class="nav-link active" data-bs-toggle="tab">Filter Table</a>
+            </li>
+            <li class="nav-item">
+                <a href="#tabs-nat" class="nav-link" data-bs-toggle="tab">NAT Table</a>
+            </li>
+            <li class="nav-item">
+                <a href="#tabs-mangle" class="nav-link" data-bs-toggle="tab">Mangle Table</a>
+            </li>
+            <li class="nav-item">
+                <a href="#tabs-templates" class="nav-link" data-bs-toggle="tab">Rule Templates</a>
+            </li>
+        </ul>
     </div>
     <div class="card-body">
-        <!-- Tables -->
-        <div class="row mb-4">
-            <div class="col-md-12">
-                <ul class="nav nav-tabs" data-bs-toggle="tabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <a href="#iptables-filter" class="nav-link active" data-bs-toggle="tab" aria-selected="true" role="tab">
-                            Filter Table
-                        </a>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <a href="#iptables-nat" class="nav-link" data-bs-toggle="tab" aria-selected="false" role="tab" tabindex="-1">
-                            NAT Table
-                        </a>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <a href="#iptables-mangle" class="nav-link" data-bs-toggle="tab" aria-selected="false" role="tab" tabindex="-1">
-                            Mangle Table
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-        
         <div class="tab-content">
             <!-- Filter Table -->
-            <div class="tab-pane active show" id="iptables-filter" role="tabpanel">
+            <div class="tab-pane active show" id="tabs-filter">
                 <div class="row mb-3">
-                    <div class="col-md-12">
-                        <h4>Chain Policies</h4>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <label class="form-label">INPUT Policy</label>
-                                <select class="form-select" onchange="changeChainPolicy('INPUT', this.value)">
-                                    <option value="ACCEPT">ACCEPT</option>
-                                    <option value="DROP" selected>DROP</option>
-                                    <option value="REJECT">REJECT</option>
-                                </select>
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="card-title">INPUT Chain</h4>
+                                <div class="card-actions">
+                                    <select class="form-select form-select-sm" onchange="setChainPolicy('INPUT', this.value)">
+                                        <option value="ACCEPT">ACCEPT</option>
+                                        <option value="DROP">DROP</option>
+                                        <option value="REJECT">REJECT</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">FORWARD Policy</label>
-                                <select class="form-select" onchange="changeChainPolicy('FORWARD', this.value)">
-                                    <option value="ACCEPT" selected>ACCEPT</option>
-                                    <option value="DROP">DROP</option>
-                                    <option value="REJECT">REJECT</option>
-                                </select>
+                            <div class="card-body p-2">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-vcenter">
+                                        <tbody id="inputRulesTable">
+                                            {{range .FirewallConfig.Rules}}
+                                            {{if eq .Chain "filter:INPUT"}}
+                                            <tr>
+                                                <td><span class="badge bg-blue">{{.Position}}</span></td>
+                                                <td><code class="text-xs">{{.RuleText}}</code></td>
+                                                <td>
+                                                    <div class="btn-list flex-nowrap">
+                                                        <a href="#" class="btn btn-sm btn-outline-primary" onclick="editIPTablesRule({{.ID}})">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-xs" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                                <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/>
+                                                                <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/>
+                                                                <path d="M16 5l3 3"/>
+                                                            </svg>
+                                                        </a>
+                                                        <a href="#" class="btn btn-sm btn-outline-danger" onclick="deleteIPTablesRule({{.ID}})">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-xs" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                                <path d="M4 7l16 0"/>
+                                                                <path d="M10 11l0 6"/>
+                                                                <path d="M14 11l0 6"/>
+                                                                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/>
+                                                                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>
+                                                            </svg>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {{end}}
+                                            {{end}}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary w-100" onclick="addIPTablesRule('INPUT')">Add INPUT Rule</button>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">OUTPUT Policy</label>
-                                <select class="form-select" onchange="changeChainPolicy('OUTPUT', this.value)">
-                                    <option value="ACCEPT" selected>ACCEPT</option>
-                                    <option value="DROP">DROP</option>
-                                    <option value="REJECT">REJECT</option>
-                                </select>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="card-title">FORWARD Chain</h4>
+                                <div class="card-actions">
+                                    <select class="form-select form-select-sm" onchange="setChainPolicy('FORWARD', this.value)">
+                                        <option value="ACCEPT">ACCEPT</option>
+                                        <option value="DROP">DROP</option>
+                                        <option value="REJECT">REJECT</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-vcenter">
+                                        <tbody id="forwardRulesTable">
+                                            {{range .FirewallConfig.Rules}}
+                                            {{if eq .Chain "filter:FORWARD"}}
+                                            <tr>
+                                                <td><span class="badge bg-blue">{{.Position}}</span></td>
+                                                <td><code class="text-xs">{{.RuleText}}</code></td>
+                                                <td>
+                                                    <div class="btn-list flex-nowrap">
+                                                        <a href="#" class="btn btn-sm btn-outline-primary" onclick="editIPTablesRule({{.ID}})">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-xs" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                                <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/>
+                                                                <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/>
+                                                                <path d="M16 5l3 3"/>
+                                                            </svg>
+                                                        </a>
+                                                        <a href="#" class="btn btn-sm btn-outline-danger" onclick="deleteIPTablesRule({{.ID}})">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-xs" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                                <path d="M4 7l16 0"/>
+                                                                <path d="M10 11l0 6"/>
+                                                                <path d="M14 11l0 6"/>
+                                                                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/>
+                                                                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>
+                                                            </svg>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {{end}}
+                                            {{end}}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary w-100" onclick="addIPTablesRule('FORWARD')">Add FORWARD Rule</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="card-title">OUTPUT Chain</h4>
+                                <div class="card-actions">
+                                    <select class="form-select form-select-sm" onchange="setChainPolicy('OUTPUT', this.value)">
+                                        <option value="ACCEPT" selected>ACCEPT</option>
+                                        <option value="DROP">DROP</option>
+                                        <option value="REJECT">REJECT</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-vcenter">
+                                        <tbody id="outputRulesTable">
+                                            {{range .FirewallConfig.Rules}}
+                                            {{if eq .Chain "filter:OUTPUT"}}
+                                            <tr>
+                                                <td><span class="badge bg-blue">{{.Position}}</span></td>
+                                                <td><code class="text-xs">{{.RuleText}}</code></td>
+                                                <td>
+                                                    <div class="btn-list flex-nowrap">
+                                                        <a href="#" class="btn btn-sm btn-outline-primary" onclick="editIPTablesRule({{.ID}})">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-xs" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                                <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/>
+                                                                <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/>
+                                                                <path d="M16 5l3 3"/>
+                                                            </svg>
+                                                        </a>
+                                                        <a href="#" class="btn btn-sm btn-outline-danger" onclick="deleteIPTablesRule({{.ID}})">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-xs" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                                <path d="M4 7l16 0"/>
+                                                                <path d="M10 11l0 6"/>
+                                                                <path d="M14 11l0 6"/>
+                                                                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/>
+                                                                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>
+                                                            </svg>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {{end}}
+                                            {{end}}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary w-100" onclick="addIPTablesRule('OUTPUT')">Add OUTPUT Rule</button>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- NAT Table -->
+            <div class="tab-pane" id="tabs-nat">
+                <div class="row mb-3">
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="card-title">PREROUTING</h4>
+                                <small class="text-muted">DNAT Rules</small>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-vcenter">
+                                        <tbody id="preroutingRulesTable">
+                                            {{range .FirewallConfig.Rules}}
+                                            {{if eq .Chain "nat:PREROUTING"}}
+                                            <tr>
+                                                <td><span class="badge bg-blue">{{.Position}}</span></td>
+                                                <td><code class="text-xs">{{.RuleText}}</code></td>
+                                                <td>
+                                                    <div class="btn-list flex-nowrap">
+                                                        <a href="#" class="btn btn-sm btn-outline-primary" onclick="editIPTablesRule({{.ID}})">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-xs" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                                <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/>
+                                                                <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/>
+                                                                <path d="M16 5l3 3"/>
+                                                            </svg>
+                                                        </a>
+                                                        <a href="#" class="btn btn-sm btn-outline-danger" onclick="deleteIPTablesRule({{.ID}})">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-xs" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                                <path d="M4 7l16 0"/>
+                                                                <path d="M10 11l0 6"/>
+                                                                <path d="M14 11l0 6"/>
+                                                                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/>
+                                                                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>
+                                                            </svg>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {{end}}
+                                            {{end}}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary w-100" onclick="addIPTablesRule('PREROUTING')">Add DNAT Rule</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="card-title">POSTROUTING</h4>
+                                <small class="text-muted">SNAT/Masquerade Rules</small>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-vcenter">
+                                        <tbody id="postroutingRulesTable">
+                                            {{range .FirewallConfig.Rules}}
+                                            {{if eq .Chain "nat:POSTROUTING"}}
+                                            <tr>
+                                                <td><span class="badge bg-blue">{{.Position}}</span></td>
+                                                <td><code class="text-xs">{{.RuleText}}</code></td>
+                                                <td>
+                                                    <div class="btn-list flex-nowrap">
+                                                        <a href="#" class="btn btn-sm btn-outline-primary" onclick="editIPTablesRule({{.ID}})">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-xs" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                                <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/>
+                                                                <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/>
+                                                                <path d="M16 5l3 3"/>
+                                                            </svg>
+                                                        </a>
+                                                        <a href="#" class="btn btn-sm btn-outline-danger" onclick="deleteIPTablesRule({{.ID}})">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-xs" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                                <path d="M4 7l16 0"/>
+                                                                <path d="M10 11l0 6"/>
+                                                                <path d="M14 11l0 6"/>
+                                                                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/>
+                                                                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>
+                                                            </svg>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {{end}}
+                                            {{end}}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary w-100" onclick="addIPTablesRule('POSTROUTING')">Add SNAT Rule</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h4 class="card-title">OUTPUT</h4>
+                                <small class="text-muted">Local NAT Rules</small>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-vcenter">
+                                        <tbody id="natOutputRulesTable">
+                                            {{range .FirewallConfig.Rules}}
+                                            {{if eq .Chain "nat:OUTPUT"}}
+                                            <tr>
+                                                <td><span class="badge bg-blue">{{.Position}}</span></td>
+                                                <td><code class="text-xs">{{.RuleText}}</code></td>
+                                                <td>
+                                                    <div class="btn-list flex-nowrap">
+                                                        <a href="#" class="btn btn-sm btn-outline-primary" onclick="editIPTablesRule({{.ID}})">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-xs" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                                <path d="M7 7h-1a2 2 0 0 0 -2 2v9a2 2 0 0 0 2 2h9a2 2 0 0 0 2 -2v-1"/>
+                                                                <path d="M20.385 6.585a2.1 2.1 0 0 0 -2.97 -2.97l-8.415 8.385v3h3l8.385 -8.415z"/>
+                                                                <path d="M16 5l3 3"/>
+                                                            </svg>
+                                                        </a>
+                                                        <a href="#" class="btn btn-sm btn-outline-danger" onclick="deleteIPTablesRule({{.ID}})">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon icon-xs" width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                                <path d="M4 7l16 0"/>
+                                                                <path d="M10 11l0 6"/>
+                                                                <path d="M14 11l0 6"/>
+                                                                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/>
+                                                                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/>
+                                                            </svg>
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {{end}}
+                                            {{end}}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <button class="btn btn-sm btn-outline-primary w-100" onclick="addIPTablesRule('OUTPUT')">Add Rule</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mangle Table -->
+            <div class="tab-pane" id="tabs-mangle">
+                <div class="alert alert-info">
+                    <h4>Mangle Table</h4>
+                    <p>The mangle table is used for specialized packet alteration. This includes marking packets for Quality of Service (QoS), changing packet headers, and other advanced packet modifications.</p>
+                </div>
                 
                 <div class="table-responsive">
-                    <table class="table table-vcenter card-table">
+                    <table class="table table-vcenter">
                         <thead>
                             <tr>
                                 <th>Chain</th>
+                                <th>Rule</th>
                                 <th>Target</th>
-                                <th>Protocol</th>
-                                <th>Source</th>
-                                <th>Destination</th>
-                                <th>Options</th>
+                                <th>Status</th>
                                 <th class="w-1">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="filter-rules">
-                            {{if .config.Rules}}
-                                {{range .config.Rules}}
-                                <tr>
-                                    <td>
-                                        <span class="badge bg-blue">{{.Chain}}</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-{{if eq .Action "ACCEPT"}}green{{else if eq .Action "DROP"}}red{{else if eq .Action "REJECT"}}yellow{{else}}secondary{{end}}">
-                                            {{.Action}}
-                                        </span>
-                                    </td>
-                                    <td>{{if .Protocol}}{{.Protocol}}{{else}}all{{end}}</td>
-                                    <td>{{if .Source}}{{.Source}}{{else}}anywhere{{end}}</td>
-                                    <td>{{if .Destination}}{{.Destination}}{{else}}anywhere{{end}}</td>
-                                    <td>
-                                        {{if .Port}}{{.Protocol}} dpt:{{.Port}}{{else}}-{{end}}
-                                    </td>
-                                    <td>
-                                        <div class="btn-list flex-nowrap">
-                                            <button class="btn btn-white btn-sm" onclick="editIPTablesRule({{.ID}})">Edit</button>
-                                            <button class="btn btn-white btn-sm" onclick="deleteRule({{.ID}})">Delete</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {{end}}
+                        <tbody id="mangleRulesTable">
+                            {{range .FirewallConfig.Rules}}
+                            {{if hasPrefix .Chain "mangle:"}}
+                            <tr>
+                                <td><code>{{index (split .Chain ":") 1}}</code></td>
+                                <td><code>{{.RuleText}}</code></td>
+                                <td><span class="badge bg-info">MARK</span></td>
+                                <td>
+                                    {{if .Enabled}}
+                                    <span class="badge bg-success">Active</span>
+                                    {{else}}
+                                    <span class="badge bg-secondary">Disabled</span>
+                                    {{end}}
+                                </td>
+                                <td>
+                                    <div class="btn-list flex-nowrap">
+                                        <a href="#" class="btn btn-sm btn-outline-primary" onclick="editIPTablesRule({{.ID}})">Edit</a>
+                                        <a href="#" class="btn btn-sm btn-outline-danger" onclick="deleteIPTablesRule({{.ID}})">Delete</a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {{end}}
                             {{else}}
                             <tr>
-                                <td colspan="7" class="text-center text-muted">No filter rules configured</td>
+                                <td colspan="5" class="text-center text-muted">No mangle rules configured</td>
                             </tr>
                             {{end}}
                         </tbody>
                     </table>
                 </div>
+                
+                <button class="btn btn-outline-primary" onclick="addMangleRule()">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Add Mangle Rule
+                </button>
             </div>
-            
-            <!-- NAT Table -->
-            <div class="tab-pane" id="iptables-nat" role="tabpanel">
-                <div class="alert alert-info">
-                    <h4 class="alert-title">NAT Configuration</h4>
-                    <div class="text-muted">Configure Network Address Translation rules for port forwarding and masquerading.</div>
-                </div>
-                
-                <div class="table-responsive">
-                    <table class="table table-vcenter card-table">
-                        <thead>
-                            <tr>
-                                <th>Chain</th>
-                                <th>Target</th>
-                                <th>Protocol</th>
-                                <th>Source</th>
-                                <th>Destination</th>
-                                <th>Options</th>
-                                <th class="w-1">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="nat-rules">
-                            <tr>
-                                <td colspan="7" class="text-center text-muted">No NAT rules configured</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                
-                <!-- Quick NAT Templates -->
-                <div class="mt-4">
-                    <h4>NAT Templates</h4>
-                    <div class="row">
-                        <div class="col-md-3">
-                            <button type="button" class="btn btn-outline-primary w-100 mb-2" onclick="addNATTemplate('masquerade')">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                    <circle cx="12" cy="12" r="9"/>
-                                    <path d="M8 12l2 2l4 -4"/>
-                                </svg>
-                                Masquerade
-                            </button>
-                        </div>
-                        <div class="col-md-3">
-                            <button type="button" class="btn btn-outline-primary w-100 mb-2" onclick="addNATTemplate('port_forward')">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                    <path d="M9 12l-4 -4l4 -4"/>
-                                    <path d="M15 12l4 -4l-4 -4"/>
-                                    <path d="M12 3v18"/>
-                                </svg>
-                                Port Forward
-                            </button>
-                        </div>
-                        <div class="col-md-3">
-                            <button type="button" class="btn btn-outline-primary w-100 mb-2" onclick="addNATTemplate('redirect')">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                    <path d="M14 14l4 -4l-4 -4"/>
-                                    <path d="M6 10h11"/>
-                                </svg>
-                                Redirect
-                            </button>
-                        </div>
-                        <div class="col-md-3">
-                            <button type="button" class="btn btn-outline-primary w-100 mb-2" onclick="addNATTemplate('snat')">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-                                    <path d="M3 12h3m12 0h3"/>
-                                    <path d="M12 3v3m0 12v3"/>
-                                    <circle cx="12" cy="12" r="6"/>
-                                </svg>
-                                SNAT
-                            </button>
+
+            <!-- Rule Templates -->
+            <div class="tab-pane" id="tabs-templates">
+                <h4>IPTables Rule Templates</h4>
+                <div class="row row-cards">
+                    <div class="col-sm-6 col-lg-4">
+                        <div class="card card-sm">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <span class="bg-success text-white avatar">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                <rect x="4" y="4" width="6" height="6" rx="1"/>
+                                                <rect x="14" y="4" width="6" height="6" rx="1"/>
+                                                <rect x="4" y="14" width="6" height="6" rx="1"/>
+                                                <rect x="14" y="14" width="6" height="6" rx="1"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <div class="col">
+                                        <div class="font-weight-medium">Allow SSH</div>
+                                        <div class="text-muted">-p tcp --dport 22 -j ACCEPT</div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <button class="btn btn-outline-success btn-sm w-100" onclick="applyIPTablesTemplate('allow_ssh')">Apply Template</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
-            
-            <!-- Mangle Table -->
-            <div class="tab-pane" id="iptables-mangle" role="tabpanel">
-                <div class="alert alert-info">
-                    <h4 class="alert-title">Mangle Table</h4>
-                    <div class="text-muted">Advanced packet manipulation for Quality of Service (QoS) and traffic shaping.</div>
-                </div>
-                
-                <div class="table-responsive">
-                    <table class="table table-vcenter card-table">
-                        <thead>
-                            <tr>
-                                <th>Chain</th>
-                                <th>Target</th>
-                                <th>Protocol</th>
-                                <th>Source</th>
-                                <th>Destination</th>
-                                <th>Options</th>
-                                <th class="w-1">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="mangle-rules">
-                            <tr>
-                                <td colspan="7" class="text-center text-muted">No mangle rules configured</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div class="col-sm-6 col-lg-4">
+                        <div class="card card-sm">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <span class="bg-success text-white avatar">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                <circle cx="12" cy="12" r="4"/>
+                                                <path d="M12 2v4"/>
+                                                <path d="M12 18v4"/>
+                                                <path d="M4.93 4.93l2.83 2.83"/>
+                                                <path d="M16.24 16.24l2.83 2.83"/>
+                                                <path d="M2 12h4"/>
+                                                <path d="M18 12h4"/>
+                                                <path d="M4.93 19.07l2.83 -2.83"/>
+                                                <path d="M16.24 7.76l2.83 -2.83"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <div class="col">
+                                        <div class="font-weight-medium">Allow HTTP/HTTPS</div>
+                                        <div class="text-muted">Web server access</div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <button class="btn btn-outline-success btn-sm w-100" onclick="applyIPTablesTemplate('allow_web')">Apply Template</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-4">
+                        <div class="card card-sm">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-auto">
+                                        <span class="bg-info text-white avatar">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                                <path d="M7 10l5 -6l5 6"/>
+                                                <path d="M21 10l-2 8a2 2.5 0 0 1 -2 2h-10a2 2.5 0 0 1 -2 -2l-2 -8z"/>
+                                            </svg>
+                                        </span>
+                                    </div>
+                                    <div class="col">
+                                        <div class="font-weight-medium">Masquerade</div>
+                                        <div class="text-muted">Internet sharing NAT</div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <button class="btn btn-outline-info btn-sm w-100" onclick="applyIPTablesTemplate('masquerade')">Apply Template</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -240,161 +481,158 @@
 </div>
 
 <script>
-function changeChainPolicy(chain, policy) {
-    if (confirm(`Change ${chain} policy to ${policy}? This will take effect immediately.`)) {
-        fetch('/api/network/firewall/policy', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chain: chain, policy: policy })
+function setChainPolicy(chain, policy) {
+    fetch('/network/api/firewall/policy', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            table: 'filter',
+            chain: chain,
+            policy: policy
         })
-        .then(response => response.json())
-        .then(result => {
-            if (result.error) {
-                alert('Error: ' + result.error);
-            } else {
-                alert('Policy changed successfully');
-            }
-        })
-        .catch(error => alert('Error changing policy: ' + error));
-    }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', `${chain} chain policy set to ${policy}`, 'success');
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to set chain policy', 'danger');
+        console.error('Error:', error);
+    });
 }
 
-function addNATTemplate(template) {
-    let rule = {};
+function addIPTablesRule(chain) {
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('firewallModal'));
     
-    switch(template) {
-        case 'masquerade':
-            rule = {
-                name: 'Masquerade Outbound',
-                chain: 'POSTROUTING',
-                action: 'MASQUERADE',
-                table: 'nat',
-                source: '192.168.1.0/24'
-            };
-            break;
-        case 'port_forward':
-            const externalPort = prompt('External port:', '8080');
-            const internalIP = prompt('Internal IP:', '192.168.1.100');
-            const internalPort = prompt('Internal port:', '80');
-            if (externalPort && internalIP && internalPort) {
-                rule = {
-                    name: `Forward ${externalPort} to ${internalIP}:${internalPort}`,
-                    chain: 'PREROUTING',
-                    action: 'DNAT',
-                    table: 'nat',
-                    protocol: 'tcp',
-                    port: externalPort,
-                    destination: `${internalIP}:${internalPort}`
-                };
-            } else {
+    // Set chain in modal
+    const chainSelect = document.querySelector('#firewallModal select[name="chain"]');
+    if (chainSelect) {
+        chainSelect.value = `filter:${chain}`;
+    }
+    
+    modal.show();
+}
+
+function addMangleRule() {
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('genericModal'));
+    
+    document.getElementById('modalTitle').textContent = 'Add Mangle Rule';
+    document.getElementById('modalBody').innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">Chain</label>
+            <select class="form-select" name="mangle_chain" required>
+                <option value="PREROUTING">PREROUTING</option>
+                <option value="INPUT">INPUT</option>
+                <option value="FORWARD">FORWARD</option>
+                <option value="OUTPUT">OUTPUT</option>
+                <option value="POSTROUTING">POSTROUTING</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Match Criteria</label>
+            <input type="text" class="form-control" name="match" placeholder="-p tcp --dport 80" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Target</label>
+            <select class="form-select" name="target" required>
+                <option value="MARK">MARK (set packet mark)</option>
+                <option value="DSCP">DSCP (set DSCP field)</option>
+                <option value="TOS">TOS (set Type of Service)</option>
+                <option value="TTL">TTL (modify TTL)</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Target Value</label>
+            <input type="text" class="form-control" name="target_value" placeholder="0x1, 0x28, etc.">
+        </div>
+    `;
+    
+    modal.show();
+}
+
+function editIPTablesRule(id) {
+    fetch(`/network/api/firewall/rules/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert('Error', data.error, 'danger');
                 return;
             }
-            break;
-        case 'redirect':
-            rule = {
-                name: 'HTTP Redirect',
-                chain: 'OUTPUT',
-                action: 'REDIRECT',
-                table: 'nat',
-                protocol: 'tcp',
-                port: '80'
-            };
-            break;
-        case 'snat':
-            rule = {
-                name: 'SNAT Rule',
-                chain: 'POSTROUTING',
-                action: 'SNAT',
-                table: 'nat',
-                destination: '192.168.1.1'
-            };
-            break;
-    }
-    
-    if (rule.name) {
-        fetch('/api/network/firewall/rules', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(rule)
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.error) {
-                alert('Error: ' + result.error);
-            } else {
-                alert('NAT rule added successfully');
-                location.reload();
-            }
-        })
-        .catch(error => alert('Error adding NAT rule: ' + error));
-    }
-}
-
-function editIPTablesRule(ruleId) {
-    // Load rule and show in modal
-    fetch(`/api/network/firewall/rules/${ruleId}`)
-        .then(response => response.json())
-        .then(rule => {
-            const modal = new bootstrap.Modal(document.getElementById('firewall-rule-modal'));
-            const form = document.getElementById('firewall-rule-form');
             
-            // Populate form with rule data
-            form.elements['name'].value = rule.name;
-            form.elements['chain'].value = rule.chain;
-            form.elements['action'].value = rule.action;
-            form.elements['protocol'].value = rule.protocol;
-            form.elements['source'].value = rule.source;
-            form.elements['destination'].value = rule.destination;
-            form.elements['port'].value = rule.port;
-            form.elements['enabled'].checked = rule.enabled;
+            // Populate modal with rule data
+            const form = document.getElementById('firewallForm');
+            form.elements.name.value = data.name || '';
+            form.elements.chain.value = data.chain || '';
+            form.elements.rule_text.value = data.rule_text || '';
+            form.elements.position.value = data.position || 0;
+            form.elements.enabled.checked = data.enabled || false;
             
+            // Set form for update
+            form.setAttribute('data-action', 'update');
+            form.setAttribute('data-id', id);
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('firewallModal'));
             modal.show();
         })
-        .catch(error => alert('Error loading rule: ' + error));
-}
-
-function exportIPTables() {
-    fetch('/api/network/firewall/export?format=iptables')
-        .then(response => response.blob())
-        .then(blob => {
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = 'iptables-rules.txt';
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
+        .catch(error => {
+            showAlert('Error', 'Failed to load rule data', 'danger');
+            console.error('Error:', error);
         });
 }
 
-function importIPTables() {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.txt,.rules';
-    input.onchange = function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const formData = new FormData();
-            formData.append('rules_file', file);
-            formData.append('format', 'iptables');
-            
-            fetch('/api/network/firewall/import', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(result => {
-                if (result.error) {
-                    alert('Error: ' + result.error);
-                } else {
-                    alert('IPTables rules imported successfully');
-                    location.reload();
-                }
-            })
-            .catch(error => alert('Error importing rules: ' + error));
+function deleteIPTablesRule(id) {
+    if (!confirm('Are you sure you want to delete this firewall rule?')) {
+        return;
+    }
+    
+    fetch(`/network/api/firewall/rules/${id}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', 'Firewall rule deleted successfully', 'success');
+            location.reload();
         }
-    };
-    input.click();
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to delete firewall rule', 'danger');
+        console.error('Error:', error);
+    });
+}
+
+function applyIPTablesTemplate(template) {
+    fetch('/network/api/firewall/templates', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+            template: template,
+            backend: 'iptables'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            showAlert('Error', data.error, 'danger');
+        } else {
+            showAlert('Success', `Template "${template}" applied successfully`, 'success');
+            location.reload();
+        }
+    })
+    .catch(error => {
+        showAlert('Error', 'Failed to apply template', 'danger');
+        console.error('Error:', error);
+    });
 }
 </script>
