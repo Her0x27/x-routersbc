@@ -1,0 +1,153 @@
+1. Первым делом необходимо создать структуру папок проекта.
+2. В корне проекте создать README.md Общий промпт разработки.
+3. В каждой корневой папке создать README.md с промптом разработки части которая содержит та или иная папка
+
+README.md в каждой папке (см. ниже). Должен содержать промпт для реализации структуру, список функций с описанием и т.д.. План реализации разбитых на задачи:
+ # github.com/Her0x27/x-routersbc/:
+ * core/ # webserver [http/2, websocket, auth, auto init/load handlers/routes/modules, rest api v1, using routersbc.sqlitedb]
+ * handlers/
+ * services/
+ * routes/
+ * templates/
+ * static/
+ * utils/ # вспомогательные инструменты 
+ * scripts/
+ 
+/templates/base/
+/templates/components/
+/templates
+     • network/index.html
+     • network/interfaces.html
+     • network/wan.html
+     • network/lan.html
+     • network/wireless.html
+     • network/routing.html
+     • network/firewall_new.html
+     • network/firewall_classic.html
+     • network/firewall.html
+     • network/modal.html
+ 
+Использование Go 1.23 + Echo Framework 
+Web сервер: 
+• 5000 / HTTP 
+• Без поддержки HTTPS 
+• Аккаунт администратора по умолчанию: sbc:hash(sbc) - # хэш-пароль. После первого входа выводить алерт - который рекомендует сменить пароль в целях безопасности ссылкой на страницу изменения пароля.
+• Сессии хранить 24ч в routersbc.sqlitedb
+• Страницы для ответов кодов: 404, 501 # templates/{404, 501, bad codes ...}.html
+• Обязательная централизованная обработка ошибок/исключений.
+ 
+ЗАПРЕЩАЮ: 
+— Использовать фиктивные/симулированные данные 
+— Использовать конструкции кода которые игнорируют ошибки
+ 
+Все шаблоны должны быть на основе Tabler.io (общая основа для всех шаблонов). 
+Шаблоны не должны содержать статические данные, только РЕАЛЬНЫЕ ДАННЫЕ! 
+ 
+Network # /templates/network/index.html
+      INTERFACES - Tabs: # network/interfaces.html
+       • Physical (eth, wlan, bt, etc ...)
+       • VLAN (vlan, ...)
+       • VPN connection (wg, awg, ppp, pptp, tun, ...)
+      WAN - Tabs: # network/wan.html 
+       • General WAN [Wire / Wireless] # выбор WAN / Interface (eth[n]|wlan[n]) - wlan доступен если создано успешное подключение STA к сети WiFi 
+       • Multi WAN [Load balancing]
+       • WAN Settings
+      LAN - Tabs: # network/lan.html
+       • DHCP [ Relay / Server / Disabled ]
+       • DNS [ Direct ISP / Proxy / Forward / Sever ] # Domains / Geo DNS Routing | Types: No secure DNS, DoT, DoH | Local DNS Zones
+       • Bridge Settings
+      WIRELESS - Tabs: # network/wireless.html
+       • AP (Access Point)
+       • STA (Station) / MANAGED
+       • ADHOC / IBSS
+       • MONITOR
+      ROUTING - Tabs # network/routing.html 
+       • Static Route # interface, ip, mask, gateway, metric 
+       • UPnP IGD & PCP # Enable port mapping service, Allow PCP/NAT-PMP Port Mapping, Stun, Traffic Shaping
+      FIREWALL - Tabs: # network/firewall.html
+        # в зависимости от настроек подгружается шаблон:
+        # network/firewall_new.html # NFTables
+        # network/firewall_classic.html # IPTables
+       • General Rules
+       • Chains # NAT, OUT/IN, FORWARD, ... 
+       • Rule templates # allow/disallow/forwarding/redirect/
+       • Firewall Settings # Core backend [nftables|iptables], ...
+System # templates/system/index.html
+    GENERAL # templates/system/index.html
+       • Смена пароля 
+       • NTPD (часовой пояс / дата время) 
+       • Создание резервной копией 
+       • Восстановление из резервной копии
+    ABOUT_THE_DEVICE # system/about-devices.html
+       • Процессор (Ядер)
+       • Оперативная память 
+       • Хранилище (ssd, sdcard, emmc, ...)
+       • Сеть (Ethernet, WiFi, Bluetooth)
+       • Видео (Описание - если есть поддержка)
+       • Аудио (Описание - если есть поддержка)
+       • External I/O (USB Ports, SPI, UART, I2P, GPIO)
+     PORTABLE_DEVICE # system/portable-devices.html
+       • Обнаружение устройств 
+       • Информацию о железе 
+       • Получение актуальной информация об установленном драйвер или отсутствие
+       • Статус работы устройства
+       • Подсказка по установке драйверов и настройки 
+       • Подключенные устройства:
+        — USB WI-FI
+        — USB ETHERNET 
+        — USB BLUETOOTH 
+        — USB 3G/LTE MODEM 
+        — USB STORAGE
+        — USB WEBCAM
+ 
+Использование модального окна:
+- Добавление/изменение STUN Server | UPnP
+- Добавление/изменение Static Route 
+- Добавление/изменение Rule | Firewall
+- Добавление/изменение Chain | Firewall
+- Добавление/изменение User Rules | Firewall
+- Добавление/изменение Network Interface
+  # выбор интерфейса | создать интерфейс на основе:  Bridge / VLAN / VWLAN (If supported wifi module) / HevSocks5Tunnel / ...
+  # Если HevSocks5Tunnel: Socks5 Address, Socks5 Port, Auth[login/password], UDP[0|1], task stack size (bytes), tcp buffer size (bytes), connect timeout (ms), read-write timeout (ms)
+  # Если VLAN: ...
+  # IP / MASK / ...
+- Добавление/изменение DNS Local Zones
+  # root zone: .local
+  # router.local A 192.168.55.1
+  # ...
+- Добавление/изменение DNS Resolver
+  # [xxx.xxx.xxx.xxx] | udp:// | tcp:// | tls:// | https:// 
+  # ...
+- Добавление/изменение DNS Routing
+  # domain: target.com -> ip [xxx.xxx.xxx.xxx]
+  # domain: target.com -> direct
+  # geozone: ru -> direct
+  # domain: target.com -> block
+  # geozone: com -> dns.resolver.com
+  # ...
+- Добавление/изменение соединения WiFi Stanton 
+  # выбор доступного адаптера 
+  # ...
+- Добавление/изменение соединения WiFi Access Point 
+  # выбор доступного адаптера 
+  # ...
+ 
+# Обновление интерфейса на websocket
+Модуль: 
+- [/handlers/handler_name.go] Обработчики
+- [/services/service_name.go]
+   • /utils/configurators/net/*
+ 
+- [/utils/configurators/] # os: armbian, debian, ubuntu 
+  * net/netplan.go
+  * net/interfaces.go
+  * net/wan.go
+  * net/dns.go
+  * net/dhcp.go
+  * net/routing.go
+  * net/firewall.go
+  * sys/kernel.go # kernel settings
+  * sys/services.go # start|stop|restart|reload|enable/disable 
+ 
+- [/routes/route_name.go] URL Роуте
+- [/templates/module_name/] Шаблон HTML5, CSS3, JS
