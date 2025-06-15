@@ -1,173 +1,162 @@
 package core
 
 import (
-	"crypto/rand"
-	"database/sql"
-	"encoding/hex"
-	"errors"
+	"crypto/sha256"
+	"fmt"
 	"time"
+
+	"github.com/Her0x27/x-routersbc/utils"
+	"github.com/labstack/echo/v4"
 )
 
-// AuthManager handles authentication and session management
-type AuthManager struct {
-	db *Database
+// User represents a system user
+type User struct {
+	ID           int       `json:"id"`
+	Username     string    `json:"username"`
+	PasswordHash string    `json:"password_hash"`
+	FirstLogin   bool      `json:"first_login"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
-// NewAuthManager creates a new auth manager
-func NewAuthManager(db *Database) *AuthManager {
-	return &AuthManager{db: db}
+// Session represents a user session
+type Session struct {
+	ID        string    `json:"id"`
+	UserID    int       `json:"user_id"`
+	CreatedAt time.Time `json:"created_at"`
+	ExpiresAt time.Time `json:"expires_at"`
+}
+
+// AuthService handles authentication operations
+type AuthService struct{}
+
+// NewAuthService creates a new auth service instance
+func NewAuthService() *AuthService {
+	return &AuthService{}
 }
 
 // Login authenticates a user and creates a session
-func (am *AuthManager) Login(username, password string) (*Session, *User, error) {
+func (a *AuthService) Login(username, password string) (*Session, error) {
 	// Get user from database
-	user, err := am.getUserByUsername(username)
+	user, err := a.GetUserByUsername(username)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil, errors.New("invalid credentials")
-		}
-		return nil, nil, err
+		return nil, fmt.Errorf("invalid credentials")
 	}
-	
+
 	// Verify password
-	if !VerifyPassword(password, user.PasswordHash) {
-		return nil, nil, errors.New("invalid credentials")
+	if !a.VerifyPassword(password, user.PasswordHash) {
+		return nil, fmt.Errorf("invalid credentials")
 	}
-	
+
 	// Create session
-	session, err := am.createSession(user.ID)
-	if err != nil {
-		return nil, nil, err
-	}
-	
-	// Update last login
-	_, err = am.db.conn.Exec(
-		"UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?",
-		user.ID,
-	)
-	if err != nil {
-		return nil, nil, err
-	}
-	
-	return session, user, nil
-}
-
-// ValidateSession validates a session token
-func (am *AuthManager) ValidateSession(sessionID string) (*User, error) {
-	var userID int
-	var expiresAt time.Time
-	
-	err := am.db.conn.QueryRow(
-		"SELECT user_id, expires_at FROM sessions WHERE id = ?",
-		sessionID,
-	).Scan(&userID, &expiresAt)
-	
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.New("invalid session")
-		}
-		return nil, err
-	}
-	
-	// Check if session is expired
-	if time.Now().After(expiresAt) {
-		// Delete expired session
-		am.db.conn.Exec("DELETE FROM sessions WHERE id = ?", sessionID)
-		return nil, errors.New("session expired")
-	}
-	
-	// Get user details
-	user, err := am.getUserByID(userID)
-	if err != nil {
-		return nil, err
-	}
-	
-	return user, nil
-}
-
-// Logout removes a session
-func (am *AuthManager) Logout(sessionID string) error {
-	_, err := am.db.conn.Exec("DELETE FROM sessions WHERE id = ?", sessionID)
-	return err
-}
-
-// ChangePassword changes a user's password
-func (am *AuthManager) ChangePassword(userID int, newPassword string) error {
-	hashedPassword := HashPassword(newPassword)
-	_, err := am.db.conn.Exec(
-		"UPDATE users SET password_hash = ?, first_login = FALSE WHERE id = ?",
-		hashedPassword, userID,
-	)
-	return err
-}
-
-// getUserByUsername gets a user by username
-func (am *AuthManager) getUserByUsername(username string) (*User, error) {
-	user := &User{}
-	var lastLogin sql.NullTime
-	
-	err := am.db.conn.QueryRow(
-		"SELECT id, username, password_hash, created_at, last_login, first_login FROM users WHERE username = ?",
-		username,
-	).Scan(&user.ID, &user.Username, &user.PasswordHash, &user.CreatedAt, &lastLogin, &user.FirstLogin)
-	
-	if err != nil {
-		return nil, err
-	}
-	
-	if lastLogin.Valid {
-		user.LastLogin = &lastLogin.Time
-	}
-	
-	return user, nil
-}
-
-// getUserByID gets a user by ID
-func (am *AuthManager) getUserByID(id int) (*User, error) {
-	user := &User{}
-	var lastLogin sql.NullTime
-	
-	err := am.db.conn.QueryRow(
-		"SELECT id, username, password_hash, created_at, last_login, first_login FROM users WHERE id = ?",
-		id,
-	).Scan(&user.ID, &user.Username, &user.PasswordHash, &user.CreatedAt, &lastLogin, &user.FirstLogin)
-	
-	if err != nil {
-		return nil, err
-	}
-	
-	if lastLogin.Valid {
-		user.LastLogin = &lastLogin.Time
-	}
-	
-	return user, nil
-}
-
-// createSession creates a new session
-func (am *AuthManager) createSession(userID int) (*Session, error) {
-	// Generate session ID
-	bytes := make([]byte, 32)
-	if _, err := rand.Read(bytes); err != nil {
-		return nil, err
-	}
-	sessionID := hex.EncodeToString(bytes)
-	
-	// Session expires in 24 hours
-	expiresAt := time.Now().Add(24 * time.Hour)
-	
-	// Insert session
-	_, err := am.db.conn.Exec(
-		"INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)",
-		sessionID, userID, expiresAt,
-	)
-	if err != nil {
-		return nil, err
-	}
-	
-	return &Session{
-		ID:        sessionID,
-		UserID:    userID,
+	session := &Session{
+		ID:        utils.GenerateSessionID(),
+		UserID:    user.ID,
 		CreatedAt: time.Now(),
-		ExpiresAt: expiresAt,
-	}, nil
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	}
+
+	// Save session to database
+	if err := a.SaveSession(session); err != nil {
+		return nil, fmt.Errorf("failed to create session: %v", err)
+	}
+
+	return session, nil
+}
+
+// GetUserByUsername retrieves a user by username
+func (a *AuthService) GetUserByUsername(username string) (*User, error) {
+	user := &User{}
+	query := "SELECT id, username, password_hash, first_login, created_at FROM users WHERE username = ?"
+	
+	row := db.QueryRow(query, username)
+	err := row.Scan(&user.ID, &user.Username, &user.PasswordHash, &user.FirstLogin, &user.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// VerifyPassword checks if the provided password matches the hash
+func (a *AuthService) VerifyPassword(password, hash string) bool {
+	return utils.HashPassword(password) == hash
+}
+
+// SaveSession saves a session to the database
+func (a *AuthService) SaveSession(session *Session) error {
+	query := "INSERT INTO sessions (id, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)"
+	_, err := db.Exec(query, session.ID, session.UserID, session.CreatedAt, session.ExpiresAt)
+	return err
+}
+
+// GetSession retrieves a session by ID
+func (a *AuthService) GetSession(sessionID string) (*Session, error) {
+	session := &Session{}
+	query := "SELECT id, user_id, created_at, expires_at FROM sessions WHERE id = ? AND expires_at > ?"
+	
+	row := db.QueryRow(query, sessionID, time.Now())
+	err := row.Scan(&session.ID, &session.UserID, &session.CreatedAt, &session.ExpiresAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return session, nil
+}
+
+// DeleteSession removes a session from the database
+func (a *AuthService) DeleteSession(sessionID string) error {
+	query := "DELETE FROM sessions WHERE id = ?"
+	_, err := db.Exec(query, sessionID)
+	return err
+}
+
+// ChangePassword updates user password
+func (a *AuthService) ChangePassword(userID int, newPassword string) error {
+	hashedPassword := utils.HashPassword(newPassword)
+	query := "UPDATE users SET password_hash = ?, first_login = 0 WHERE id = ?"
+	_, err := db.Exec(query, hashedPassword, userID)
+	return err
+}
+
+// CreateDefaultUser creates the default admin user if it doesn't exist
+func (a *AuthService) CreateDefaultUser() error {
+	// Check if default user exists
+	_, err := a.GetUserByUsername("sbc")
+	if err == nil {
+		return nil // User already exists
+	}
+
+	// Create default user with hashed password "sbc"
+	hashedPassword := utils.HashPassword("sbc")
+	query := "INSERT INTO users (username, password_hash, first_login, created_at) VALUES (?, ?, ?, ?)"
+	_, err = db.Exec(query, "sbc", hashedPassword, true, time.Now())
+	return err
+}
+
+// AuthMiddleware checks for valid session
+func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		// Skip auth for login page and static files
+		path := c.Request().URL.Path
+		if path == "/login" || path == "/static" {
+			return next(c)
+		}
+
+		// Get session cookie
+		cookie, err := c.Cookie("session_id")
+		if err != nil {
+			return c.Redirect(302, "/login")
+		}
+
+		// Validate session
+		authService := NewAuthService()
+		session, err := authService.GetSession(cookie.Value)
+		if err != nil {
+			return c.Redirect(302, "/login")
+		}
+
+		// Store session in context
+		c.Set("session", session)
+		return next(c)
+	}
 }

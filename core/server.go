@@ -5,124 +5,75 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/Her0x27/x-routersbc/handlers"
 	"github.com/Her0x27/x-routersbc/routes"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
-// TemplateRenderer is a custom html/template renderer for Echo framework
+// TemplateRenderer implements echo.Renderer interface
 type TemplateRenderer struct {
 	templates *template.Template
 }
 
 // Render renders a template document
 func (t *TemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-	// Add global template data
-	if viewContext, isMap := data.(map[string]interface{}); isMap {
-		viewContext["reverse"] = c.Echo().Reverse
-	}
 	return t.templates.ExecuteTemplate(w, name, data)
 }
 
-// Server represents the main server instance
-type Server struct {
-	echo     *echo.Echo
-	database *Database
-	auth     *AuthManager
-	ws       *WebSocketManager
-}
-
-// NewServer creates a new server instance
-func NewServer() *Server {
+// NewServer creates and configures a new Echo server instance
+func NewServer() *echo.Echo {
 	e := echo.New()
-	
-	// Initialize components
-	db, err := NewDatabase()
-	if err != nil {
-		e.Logger.Fatal("Failed to initialize database:", err)
-	}
-	
-	authManager := NewAuthManager(db)
-	wsManager := NewWebSocketManager()
 
-	// Setup middleware
+	// Configure template renderer
+	renderer := &TemplateRenderer{
+		templates: template.Must(template.ParseGlob("templates/*/*.html")),
+	}
+	e.Renderer = renderer
+
+	// Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
-	
+
+	// Static files
+	e.Static("/static", "static")
+
 	// Custom error handler
 	e.HTTPErrorHandler = customErrorHandler
-	
-	// Setup template renderer
-	renderer := &TemplateRenderer{
-		templates: template.Must(template.ParseGlob("templates/**/*.html")),
-	}
-	e.Renderer = renderer
-	
-	// Serve static files
-	e.Static("/static", "static")
-	
-	server := &Server{
-		echo:     e,
-		database: db,
-		auth:     authManager,
-		ws:       wsManager,
-	}
-	
-	// Initialize handlers
-	authHandler := handlers.NewAuthHandler(authManager, db)
-	networkHandler := handlers.NewNetworkHandler()
-	systemHandler := handlers.NewSystemHandler()
-	
+
 	// Setup routes
-	routes.SetupRoutes(e, authHandler, networkHandler, systemHandler, wsManager)
-	
-	return server
+	routes.SetupRoutes(e)
+
+	return e
 }
 
-// Start starts the server
-func (s *Server) Start(address string) error {
-	return s.echo.Start(address)
-}
-
-// customErrorHandler handles errors globally
+// customErrorHandler handles HTTP errors with custom pages
 func customErrorHandler(err error, c echo.Context) {
 	code := http.StatusInternalServerError
 	message := "Internal Server Error"
-	
+
 	if he, ok := err.(*echo.HTTPError); ok {
 		code = he.Code
-		if msg, ok := he.Message.(string); ok {
-			message = msg
-		}
+		message = he.Message.(string)
 	}
-	
-	// Log the error
-	c.Logger().Error(err)
-	
-	// Render error page
+
+	// Try to render custom error page
 	switch code {
 	case 404:
 		if err := c.Render(code, "404.html", map[string]interface{}{
-			"title": "Page Not Found",
-			"error": message,
+			"Title":   "Page Not Found",
+			"Message": "The requested page could not be found.",
 		}); err != nil {
-			c.Logger().Error(err)
+			c.String(code, message)
 		}
 	case 501:
 		if err := c.Render(code, "501.html", map[string]interface{}{
-			"title": "Not Implemented",
-			"error": message,
+			"Title":   "Not Implemented",
+			"Message": "This feature is not yet implemented.",
 		}); err != nil {
-			c.Logger().Error(err)
+			c.String(code, message)
 		}
 	default:
-		if err := c.Render(code, "404.html", map[string]interface{}{
-			"title": "Error",
-			"error": message,
-		}); err != nil {
-			c.Logger().Error(err)
-		}
+		c.String(code, message)
 	}
 }

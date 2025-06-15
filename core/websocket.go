@@ -9,125 +9,177 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// WebSocketManager manages WebSocket connections
-type WebSocketManager struct {
-	clients    map[*websocket.Conn]bool
-	broadcast  chan []byte
-	register   chan *websocket.Conn
-	unregister chan *websocket.Conn
-	upgrader   websocket.Upgrader
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true // Allow connections from any origin in development
+	},
 }
 
-// WebSocketMessage represents a WebSocket message
-type WebSocketMessage struct {
+// WSMessage represents a WebSocket message
+type WSMessage struct {
 	Type string      `json:"type"`
 	Data interface{} `json:"data"`
 }
 
-// NewWebSocketManager creates a new WebSocket manager
-func NewWebSocketManager() *WebSocketManager {
-	manager := &WebSocketManager{
-		clients:    make(map[*websocket.Conn]bool),
-		broadcast:  make(chan []byte),
-		register:   make(chan *websocket.Conn),
-		unregister: make(chan *websocket.Conn),
-		upgrader: websocket.Upgrader{
-			CheckOrigin: func(r *http.Request) bool {
-				return true // Allow connections from any origin
-			},
-		},
-	}
-	
-	go manager.run()
-	return manager
+// WSClient represents a WebSocket client
+type WSClient struct {
+	conn   *websocket.Conn
+	send   chan WSMessage
+	hub    *WSHub
+	userID int
 }
 
-// run handles WebSocket connections
-func (manager *WebSocketManager) run() {
+// WSHub maintains active clients and broadcasts messages
+type WSHub struct {
+	clients    map[*WSClient]bool
+	broadcast  chan WSMessage
+	register   chan *WSClient
+	unregister chan *WSClient
+}
+
+// NewWSHub creates a new WebSocket hub
+func NewWSHub() *WSHub {
+	return &WSHub{
+		clients:    make(map[*WSClient]bool),
+		broadcast:  make(chan WSMessage),
+		register:   make(chan *WSClient),
+		unregister: make(chan *WSClient),
+	}
+}
+
+// Run starts the WebSocket hub
+func (h *WSHub) Run() {
 	for {
 		select {
-		case client := <-manager.register:
-			manager.clients[client] = true
-			log.Println("WebSocket client connected")
-			
-		case client := <-manager.unregister:
-			if _, ok := manager.clients[client]; ok {
-				delete(manager.clients, client)
-				client.Close()
-				log.Println("WebSocket client disconnected")
+		case client := <-h.register:
+			h.clients[client] = true
+			log.Printf("WebSocket client connected. Total: %d", len(h.clients))
+
+		case client := <-h.unregister:
+			if _, ok := h.clients[client]; ok {
+				delete(h.clients, client)
+				close(client.send)
+				log.Printf("WebSocket client disconnected. Total: %d", len(h.clients))
 			}
-			
-		case message := <-manager.broadcast:
-			for client := range manager.clients {
-				if err := client.WriteMessage(websocket.TextMessage, message); err != nil {
-					log.Printf("WebSocket write error: %v", err)
-					delete(manager.clients, client)
-					client.Close()
+
+		case message := <-h.broadcast:
+			for client := range h.clients {
+				select {
+				case client.send <- message:
+				default:
+					close(client.send)
+					delete(h.clients, client)
 				}
 			}
 		}
 	}
 }
 
-// HandleWebSocket handles WebSocket connections
-func (manager *WebSocketManager) HandleWebSocket(c echo.Context) error {
-	conn, err := manager.upgrader.Upgrade(c.Response(), c.Request(), nil)
-	if err != nil {
-		return err
-	}
-	
-	manager.register <- conn
-	
-	// Handle messages from client
-	go func() {
-		defer func() {
-			manager.unregister <- conn
-		}()
-		
-		for {
-			var msg WebSocketMessage
-			if err := conn.ReadJSON(&msg); err != nil {
-				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-					log.Printf("WebSocket error: %v", err)
-				}
-				break
-			}
-			
-			// Handle different message types
-			manager.handleMessage(msg)
-		}
-	}()
-	
-	return nil
-}
-
-// handleMessage handles incoming WebSocket messages
-func (manager *WebSocketManager) handleMessage(msg WebSocketMessage) {
-	switch msg.Type {
-	case "ping":
-		manager.SendMessage("pong", map[string]string{"status": "ok"})
-	case "get_interfaces":
-		// Handle interface status request
-		manager.SendMessage("interfaces_update", map[string]string{"status": "updated"})
-	}
-}
-
-// SendMessage broadcasts a message to all connected clients
-func (manager *WebSocketManager) SendMessage(msgType string, data interface{}) {
-	msg := WebSocketMessage{
+// BroadcastMessage sends a message to all connected clients
+func (h *WSHub) BroadcastMessage(msgType string, data interface{}) {
+	message := WSMessage{
 		Type: msgType,
 		Data: data,
 	}
-	
-	jsonData, err := json.Marshal(msg)
-	if err != nil {
-		log.Printf("Failed to marshal WebSocket message: %v", err)
-		return
+	h.broadcast <- message
+}
+
+// HandleWebSocket handles WebSocket connections
+func HandleWebSocket(hub *WSHub) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
+		if err != nil {
+			log.Printf("WebSocket upgrade error: %v", err)
+			return err
+		}
+
+		// Get user session
+		session := c.Get("session").(*Session)
+		
+		client := &WSClient{
+			conn:   conn,
+			send:   make(chan WSMessage, 256),
+			hub:    hub,
+			userID: session.UserID,
+		}
+
+		client.hub.register <- client
+
+		// Start goroutines for reading and writing
+		go client.writePump()
+		go client.readPump()
+
+		return nil
 	}
-	
-	select {
-	case manager.broadcast <- jsonData:
+}
+
+// readPump handles reading messages from the WebSocket connection
+func (c *WSClient) readPump() {
+	defer func() {
+		c.hub.unregister <- c
+		c.conn.Close()
+	}()
+
+	for {
+		var message WSMessage
+		err := c.conn.ReadJSON(&message)
+		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				log.Printf("WebSocket error: %v", err)
+			}
+			break
+		}
+
+		// Handle incoming messages
+		c.handleMessage(message)
+	}
+}
+
+// writePump handles writing messages to the WebSocket connection
+func (c *WSClient) writePump() {
+	defer c.conn.Close()
+
+	for {
+		select {
+		case message, ok := <-c.send:
+			if !ok {
+				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			if err := c.conn.WriteJSON(message); err != nil {
+				log.Printf("WebSocket write error: %v", err)
+				return
+			}
+		}
+	}
+}
+
+// handleMessage processes incoming WebSocket messages
+func (c *WSClient) handleMessage(message WSMessage) {
+	switch message.Type {
+	case "ping":
+		c.send <- WSMessage{Type: "pong", Data: nil}
+	case "get_interfaces":
+		// Get current network interfaces and send to client
+		// This would integrate with the network service
+		c.send <- WSMessage{
+			Type: "interfaces_update",
+			Data: map[string]interface{}{
+				"timestamp": "current_time",
+				"interfaces": []interface{}{},
+			},
+		}
 	default:
-		log.Println("WebSocket broadcast channel is full")
+		log.Printf("Unknown WebSocket message type: %s", message.Type)
 	}
+}
+
+// Global WebSocket hub instance
+var GlobalWSHub *WSHub
+
+// InitWebSocket initializes the global WebSocket hub
+func InitWebSocket() {
+	GlobalWSHub = NewWSHub()
+	go GlobalWSHub.Run()
 }

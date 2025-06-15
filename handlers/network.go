@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/Her0x27/x-routersbc/services"
 	"github.com/labstack/echo/v4"
@@ -19,140 +20,225 @@ func NewNetworkHandler() *NetworkHandler {
 	}
 }
 
-// ShowNetworkIndex shows the network overview page
+// ShowNetworkIndex displays the main network page
 func (h *NetworkHandler) ShowNetworkIndex(c echo.Context) error {
 	return c.Render(http.StatusOK, "network/index.html", map[string]interface{}{
-		"title": "Network - RouterSBC",
+		"Title": "Network - RouterSBC",
 	})
 }
 
-// ShowInterfaces shows the network interfaces page
+// ShowInterfaces displays the network interfaces page
 func (h *NetworkHandler) ShowInterfaces(c echo.Context) error {
-	interfaces, err := h.networkService.GetNetworkInterfaces()
+	interfaces, err := h.networkService.GetInterfaces()
 	if err != nil {
-		return c.Render(http.StatusInternalServerError, "network/interfaces.html", map[string]interface{}{
-			"title": "Network Interfaces - RouterSBC",
-			"error": err.Error(),
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to get network interfaces",
 		})
 	}
-	
+
 	return c.Render(http.StatusOK, "network/interfaces.html", map[string]interface{}{
-		"title":      "Network Interfaces - RouterSBC",
-		"interfaces": interfaces,
+		"Title":      "Network Interfaces - RouterSBC",
+		"Interfaces": interfaces,
 	})
 }
 
-// ShowWAN shows the WAN configuration page
+// ShowWAN displays the WAN configuration page
 func (h *NetworkHandler) ShowWAN(c echo.Context) error {
-	wanConfig, err := h.networkService.GetWANConfiguration()
+	wanConfig, err := h.networkService.GetWANConfig()
 	if err != nil {
-		return c.Render(http.StatusInternalServerError, "network/wan.html", map[string]interface{}{
-			"title": "WAN Configuration - RouterSBC",
-			"error": err.Error(),
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to get WAN configuration",
 		})
 	}
-	
+
 	return c.Render(http.StatusOK, "network/wan.html", map[string]interface{}{
-		"title":  "WAN Configuration - RouterSBC",
-		"config": wanConfig,
+		"Title":     "WAN Configuration - RouterSBC",
+		"WANConfig": wanConfig,
 	})
 }
 
-// ShowLAN shows the LAN configuration page
+// ShowLAN displays the LAN configuration page
 func (h *NetworkHandler) ShowLAN(c echo.Context) error {
-	lanConfig, err := h.networkService.GetLANConfiguration()
+	lanConfig, err := h.networkService.GetLANConfig()
 	if err != nil {
-		return c.Render(http.StatusInternalServerError, "network/lan.html", map[string]interface{}{
-			"title": "LAN Configuration - RouterSBC",
-			"error": err.Error(),
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to get LAN configuration",
 		})
 	}
-	
+
 	return c.Render(http.StatusOK, "network/lan.html", map[string]interface{}{
-		"title":  "LAN Configuration - RouterSBC",
-		"config": lanConfig,
+		"Title":     "LAN Configuration - RouterSBC",
+		"LANConfig": lanConfig,
 	})
 }
 
-// ShowWireless shows the wireless configuration page
+// ShowWireless displays the wireless configuration page
 func (h *NetworkHandler) ShowWireless(c echo.Context) error {
-	wirelessConfig, err := h.networkService.GetWirelessConfiguration()
+	wirelessConfig, err := h.networkService.GetWirelessConfig()
 	if err != nil {
-		return c.Render(http.StatusInternalServerError, "network/wireless.html", map[string]interface{}{
-			"title": "Wireless Configuration - RouterSBC",
-			"error": err.Error(),
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to get wireless configuration",
 		})
 	}
-	
+
 	return c.Render(http.StatusOK, "network/wireless.html", map[string]interface{}{
-		"title":  "Wireless Configuration - RouterSBC",
-		"config": wirelessConfig,
+		"Title":          "Wireless Configuration - RouterSBC",
+		"WirelessConfig": wirelessConfig,
 	})
 }
 
-// ShowRouting shows the routing configuration page
+// ShowRouting displays the routing configuration page
 func (h *NetworkHandler) ShowRouting(c echo.Context) error {
-	routes, err := h.networkService.GetStaticRoutes()
+	routes, err := h.networkService.GetRoutes()
 	if err != nil {
-		return c.Render(http.StatusInternalServerError, "network/routing.html", map[string]interface{}{
-			"title": "Routing Configuration - RouterSBC",
-			"error": err.Error(),
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to get routing table",
 		})
 	}
-	
+
 	return c.Render(http.StatusOK, "network/routing.html", map[string]interface{}{
-		"title":  "Routing Configuration - RouterSBC",
-		"routes": routes,
+		"Title":  "Routing Configuration - RouterSBC",
+		"Routes": routes,
 	})
 }
 
-// ShowFirewall shows the firewall configuration page
+// ShowFirewall displays the firewall configuration page
 func (h *NetworkHandler) ShowFirewall(c echo.Context) error {
-	firewallConfig, err := h.networkService.GetFirewallConfiguration()
+	firewallConfig, err := h.networkService.GetFirewallConfig()
 	if err != nil {
-		return c.Render(http.StatusInternalServerError, "network/firewall.html", map[string]interface{}{
-			"title": "Firewall Configuration - RouterSBC",
-			"error": err.Error(),
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to get firewall configuration",
 		})
 	}
-	
-	return c.Render(http.StatusOK, "network/firewall.html", map[string]interface{}{
-		"title":  "Firewall Configuration - RouterSBC",
-		"config": firewallConfig,
+
+	// Determine which template to use based on firewall backend
+	template := "network/firewall_new.html" // NFTables by default
+	if firewallConfig.Backend == "iptables" {
+		template = "network/firewall_classic.html"
+	}
+
+	return c.Render(http.StatusOK, template, map[string]interface{}{
+		"Title":          "Firewall Configuration - RouterSBC",
+		"FirewallConfig": firewallConfig,
 	})
 }
 
-// SaveInterface saves or updates a network interface
-func (h *NetworkHandler) SaveInterface(c echo.Context) error {
+// API Endpoints for AJAX requests
+
+// GetInterfacesAPI returns interfaces as JSON
+func (h *NetworkHandler) GetInterfacesAPI(c echo.Context) error {
+	interfaces, err := h.networkService.GetInterfaces()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to get network interfaces",
+		})
+	}
+	return c.JSON(http.StatusOK, interfaces)
+}
+
+// CreateInterface creates a new network interface
+func (h *NetworkHandler) CreateInterface(c echo.Context) error {
 	var req services.InterfaceRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "Invalid request data",
+			"error": "Invalid request format",
 		})
 	}
-	
-	if err := h.networkService.SaveInterface(&req); err != nil {
+
+	if err := h.networkService.CreateInterface(req); err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": err.Error(),
+			"error": "Failed to create interface: " + err.Error(),
 		})
 	}
-	
+
 	return c.JSON(http.StatusOK, map[string]string{
-		"message": "Interface saved successfully",
+		"message": "Interface created successfully",
 	})
 }
 
-// DeleteInterface deletes a network interface
-func (h *NetworkHandler) DeleteInterface(c echo.Context) error {
-	interfaceName := c.Param("name")
-	
-	if err := h.networkService.DeleteInterface(interfaceName); err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": err.Error(),
+// UpdateInterface updates an existing network interface
+func (h *NetworkHandler) UpdateInterface(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid interface ID",
 		})
 	}
-	
+
+	var req services.InterfaceRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid request format",
+		})
+	}
+
+	if err := h.networkService.UpdateInterface(id, req); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to update interface: " + err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Interface updated successfully",
+	})
+}
+
+// DeleteInterface removes a network interface
+func (h *NetworkHandler) DeleteInterface(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid interface ID",
+		})
+	}
+
+	if err := h.networkService.DeleteInterface(id); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to delete interface: " + err.Error(),
+		})
+	}
+
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "Interface deleted successfully",
+	})
+}
+
+// CreateRoute creates a new static route
+func (h *NetworkHandler) CreateRoute(c echo.Context) error {
+	var req services.RouteRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid request format",
+		})
+	}
+
+	if err := h.networkService.CreateRoute(req); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to create route: " + err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Route created successfully",
+	})
+}
+
+// UpdateWANConfig updates WAN configuration
+func (h *NetworkHandler) UpdateWANConfig(c echo.Context) error {
+	var req services.WANConfigRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid request format",
+		})
+	}
+
+	if err := h.networkService.UpdateWANConfig(req); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to update WAN configuration: " + err.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "WAN configuration updated successfully",
 	})
 }

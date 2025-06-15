@@ -8,7 +8,12 @@ import (
 )
 
 func main() {
-	// Initialize the server
+	// Initialize database
+	if err := core.InitDatabase(); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+
+	// Create and configure server
 	server := core.NewServer()
 	
 	// Get port from environment or use default
@@ -17,9 +22,9 @@ func main() {
 		port = "5000"
 	}
 
-	// Start the server
+	// Start server
 	log.Printf("Starting RouterSBC server on port %s", port)
 	if err := server.Start("0.0.0.0:" + port); err != nil {
-		log.Fatal("Failed to start server:", err)
+		log.Fatalf("Server failed to start: %v", err)
 	}
 }
