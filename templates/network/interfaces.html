@@ -1,0 +1,338 @@
+{{define "content"}}
+<!-- Page header -->
+<div class="page-header d-print-none">
+    <div class="container-xl">
+        <div class="row g-2 align-items-center">
+            <div class="col">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/network">Network</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Interfaces</li>
+                    </ol>
+                </nav>
+                <h2 class="page-title">
+                    Network Interfaces
+                </h2>
+            </div>
+            <div class="col-auto ms-auto d-print-none">
+                <div class="btn-list">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#interface-modal">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Add Interface
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Page body -->
+<div class="page-body">
+    <div class="container-xl">
+        <!-- Tabs -->
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" data-bs-toggle="tabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a href="#tabs-physical" class="nav-link active" data-bs-toggle="tab" aria-selected="true" role="tab">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <rect x="3" y="3" width="6" height="6" rx="1"/>
+                                <rect x="15" y="15" width="6" height="6" rx="1"/>
+                                <path d="m9 6l6 6"/>
+                                <path d="m12 3l0 6"/>
+                                <path d="m6 9l6 0"/>
+                                <path d="m21 12l-6 0"/>
+                                <path d="m18 15l0 6"/>
+                            </svg>
+                            Physical
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a href="#tabs-vlan" class="nav-link" data-bs-toggle="tab" aria-selected="false" role="tab" tabindex="-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M8 4l-6 4l6 4"/>
+                                <path d="M16 4l6 4l-6 4"/>
+                                <path d="M12 20v-16"/>
+                            </svg>
+                            VLAN
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a href="#tabs-vpn" class="nav-link" data-bs-toggle="tab" aria-selected="false" role="tab" tabindex="-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon me-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                <path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3"/>
+                                <path d="M12 11m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/>
+                                <path d="M12 12l0 2.5"/>
+                            </svg>
+                            VPN
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content">
+                    <!-- Physical Interfaces Tab -->
+                    <div class="tab-pane active show" id="tabs-physical" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-vcenter card-table">
+                                <thead>
+                                    <tr>
+                                        <th>Interface</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>IP Address</th>
+                                        <th>MAC Address</th>
+                                        <th class="w-1">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="physical-interfaces">
+                                    {{if .interfaces}}
+                                        {{range .interfaces}}
+                                            {{if or (eq .Type "ethernet") (eq .Type "wireless") (eq .Type "loopback")}}
+                                            <tr>
+                                                <td>
+                                                    <div class="d-flex py-1 align-items-center">
+                                                        <div class="flex-fill">
+                                                            <div class="font-weight-medium">{{.Name}}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-{{if eq .Type "ethernet"}}blue{{else if eq .Type "wireless"}}green{{else}}secondary{{end}} me-1"></span>
+                                                    {{.Type}}
+                                                </td>
+                                                <td>
+                                                    {{if .Enabled}}
+                                                        <span class="status status-green">
+                                                            <span class="status-dot status-dot-animated"></span>
+                                                            UP
+                                                        </span>
+                                                    {{else}}
+                                                        <span class="status status-red">
+                                                            <span class="status-dot"></span>
+                                                            DOWN
+                                                        </span>
+                                                    {{end}}
+                                                </td>
+                                                <td class="text-muted">
+                                                    {{if .IPAddress}}{{.IPAddress}}{{if .Netmask}}/{{.Netmask}}{{end}}{{else}}-{{end}}
+                                                </td>
+                                                <td class="text-muted">{{if .MAC}}{{.MAC}}{{else}}-{{end}}</td>
+                                                <td>
+                                                    <div class="btn-list flex-nowrap">
+                                                        <button class="btn btn-white btn-sm" onclick="editInterface('{{.Name}}')">
+                                                            Edit
+                                                        </button>
+                                                        {{if ne .Name "lo"}}
+                                                        <button class="btn btn-white btn-sm" onclick="deleteInterface('{{.Name}}')">
+                                                            Delete
+                                                        </button>
+                                                        {{end}}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {{end}}
+                                        {{end}}
+                                    {{else}}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">Loading interfaces...</td>
+                                    </tr>
+                                    {{end}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- VLAN Interfaces Tab -->
+                    <div class="tab-pane" id="tabs-vlan" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-vcenter card-table">
+                                <thead>
+                                    <tr>
+                                        <th>Interface</th>
+                                        <th>Parent Interface</th>
+                                        <th>VLAN ID</th>
+                                        <th>Status</th>
+                                        <th>IP Address</th>
+                                        <th class="w-1">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vlan-interfaces">
+                                    {{if .interfaces}}
+                                        {{range .interfaces}}
+                                            {{if eq .Type "vlan"}}
+                                            <tr>
+                                                <td>{{.Name}}</td>
+                                                <td>-</td>
+                                                <td>-</td>
+                                                <td>
+                                                    {{if .Enabled}}
+                                                        <span class="status status-green">
+                                                            <span class="status-dot status-dot-animated"></span>
+                                                            UP
+                                                        </span>
+                                                    {{else}}
+                                                        <span class="status status-red">
+                                                            <span class="status-dot"></span>
+                                                            DOWN
+                                                        </span>
+                                                    {{end}}
+                                                </td>
+                                                <td>{{if .IPAddress}}{{.IPAddress}}{{if .Netmask}}/{{.Netmask}}{{end}}{{else}}-{{end}}</td>
+                                                <td>
+                                                    <div class="btn-list flex-nowrap">
+                                                        <button class="btn btn-white btn-sm" onclick="editInterface('{{.Name}}')">Edit</button>
+                                                        <button class="btn btn-white btn-sm" onclick="deleteInterface('{{.Name}}')">Delete</button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {{end}}
+                                        {{end}}
+                                    {{else}}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">No VLAN interfaces configured</td>
+                                    </tr>
+                                    {{end}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- VPN Interfaces Tab -->
+                    <div class="tab-pane" id="tabs-vpn" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-vcenter card-table">
+                                <thead>
+                                    <tr>
+                                        <th>Interface</th>
+                                        <th>VPN Type</th>
+                                        <th>Status</th>
+                                        <th>Local IP</th>
+                                        <th>Remote Endpoint</th>
+                                        <th class="w-1">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vpn-interfaces">
+                                    {{if .interfaces}}
+                                        {{range .interfaces}}
+                                            {{if eq .Type "vpn"}}
+                                            <tr>
+                                                <td>{{.Name}}</td>
+                                                <td>
+                                                    {{if contains .Name "wg"}}WireGuard
+                                                    {{else if contains .Name "tun"}}OpenVPN
+                                                    {{else if contains .Name "ppp"}}PPP
+                                                    {{else}}Unknown{{end}}
+                                                </td>
+                                                <td>
+                                                    {{if .Enabled}}
+                                                        <span class="status status-green">
+                                                            <span class="status-dot status-dot-animated"></span>
+                                                            Connected
+                                                        </span>
+                                                    {{else}}
+                                                        <span class="status status-red">
+                                                            <span class="status-dot"></span>
+                                                            Disconnected
+                                                        </span>
+                                                    {{end}}
+                                                </td>
+                                                <td>{{if .IPAddress}}{{.IPAddress}}{{else}}-{{end}}</td>
+                                                <td>-</td>
+                                                <td>
+                                                    <div class="btn-list flex-nowrap">
+                                                        <button class="btn btn-white btn-sm" onclick="editInterface('{{.Name}}')">Edit</button>
+                                                        <button class="btn btn-white btn-sm" onclick="deleteInterface('{{.Name}}')">Delete</button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {{end}}
+                                        {{end}}
+                                    {{else}}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">No VPN interfaces configured</td>
+                                    </tr>
+                                    {{end}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function editInterface(name) {
+    // Populate modal with interface data and show it
+    const modal = new bootstrap.Modal(document.getElementById('interface-modal'));
+    
+    // Load interface data (would call API in real implementation)
+    const form = document.getElementById('interface-form');
+    form.elements['name'].value = name;
+    
+    modal.show();
+}
+
+function deleteInterface(name) {
+    if (confirm(`Are you sure you want to delete interface ${name}?`)) {
+        fetch(`/network/interfaces/${name}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert('Error: ' + data.error);
+            } else {
+                location.reload();
+            }
+        })
+        .catch(error => {
+            alert('Error deleting interface: ' + error);
+        });
+    }
+}
+
+// Handle interface form submission
+document.getElementById('interface-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        name: formData.get('name'),
+        type: formData.get('type'),
+        ip_address: formData.get('ip_address'),
+        netmask: formData.get('netmask'),
+        gateway: formData.get('gateway'),
+        enabled: formData.get('enabled') === 'on'
+    };
+    
+    fetch('/network/interfaces', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        alert('Error saving interface: ' + error);
+    });
+});
+</script>
+{{end}}
+{{template "base/layout.html" .}}

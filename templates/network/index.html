@@ -1,0 +1,329 @@
+{{define "content"}}
+<!-- Page header -->
+<div class="page-header d-print-none">
+    <div class="container-xl">
+        <div class="row g-2 align-items-center">
+            <div class="col">
+                <h2 class="page-title">
+                    Network Overview
+                </h2>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Page body -->
+<div class="page-body">
+    <div class="container-xl">
+        <div class="row row-deck row-cards">
+            <!-- Network Statistics -->
+            <div class="col-12">
+                <div class="row row-cards">
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="subheader">Interfaces</div>
+                                    <div class="ms-auto lh-1">
+                                        <div class="dropdown">
+                                            <a class="dropdown-toggle text-muted" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Last 7 days</a>
+                                            <div class="dropdown-menu dropdown-menu-end">
+                                                <a class="dropdown-item active" href="#">Last 7 days</a>
+                                                <a class="dropdown-item" href="#">Last 30 days</a>
+                                                <a class="dropdown-item" href="#">Last 3 months</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="h1 mb-3" id="interface-count">Loading...</div>
+                                <div class="d-flex mb-2">
+                                    <div class="flex-1">
+                                        <div class="progress progress-sm">
+                                            <div class="progress-bar bg-primary" style="width: 75%" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">
+                                                <span class="visually-hidden">75% Complete</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex-0 ms-3 text-muted" id="interface-active">0 active</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="subheader">Network Traffic</div>
+                                </div>
+                                <div class="h1 mb-3" id="traffic-rate">Loading...</div>
+                                <div class="d-flex mb-2">
+                                    <div class="flex-1">
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <div class="text-muted">RX: <span id="rx-rate">0 B/s</span></div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="text-muted">TX: <span id="tx-rate">0 B/s</span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="subheader">Firewall Rules</div>
+                                </div>
+                                <div class="h1 mb-3" id="firewall-rules">Loading...</div>
+                                <div class="d-flex mb-2">
+                                    <div class="flex-1">
+                                        <div class="text-muted" id="firewall-status">Checking status...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="subheader">Static Routes</div>
+                                </div>
+                                <div class="h1 mb-3" id="static-routes">Loading...</div>
+                                <div class="d-flex mb-2">
+                                    <div class="flex-1">
+                                        <div class="text-muted" id="routing-status">Checking status...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Quick Actions</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6 col-sm-4">
+                                <a href="/network/interfaces" class="btn btn-outline-primary w-100 mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon mb-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <rect x="3" y="3" width="6" height="6" rx="1"/>
+                                        <rect x="15" y="15" width="6" height="6" rx="1"/>
+                                        <path d="m9 6l6 6"/>
+                                        <path d="m12 3l0 6"/>
+                                        <path d="m6 9l6 0"/>
+                                        <path d="m21 12l-6 0"/>
+                                        <path d="m18 15l0 6"/>
+                                    </svg>
+                                    Interfaces
+                                </a>
+                            </div>
+                            <div class="col-6 col-sm-4">
+                                <a href="/network/wan" class="btn btn-outline-primary w-100 mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon mb-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <circle cx="12" cy="12" r="9"/>
+                                        <line x1="12" y1="8" x2="12" y2="16"/>
+                                        <line x1="8" y1="12" x2="16" y2="12"/>
+                                    </svg>
+                                    WAN
+                                </a>
+                            </div>
+                            <div class="col-6 col-sm-4">
+                                <a href="/network/lan" class="btn btn-outline-primary w-100 mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon mb-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M3 17h18l-2 -4h-14z"/>
+                                        <path d="M5 17v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-2"/>
+                                        <path d="M12 13v4"/>
+                                        <path d="M12 5v8"/>
+                                        <path d="M9 8l3 -3l3 3"/>
+                                    </svg>
+                                    LAN
+                                </a>
+                            </div>
+                            <div class="col-6 col-sm-4">
+                                <a href="/network/wireless" class="btn btn-outline-primary w-100 mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon mb-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M12 18l.01 0"/>
+                                        <path d="M9.172 15.172a4 4 0 0 1 5.656 0"/>
+                                        <path d="M6.343 12.343a8 8 0 0 1 11.314 0"/>
+                                        <path d="M3.515 9.515c4.686 -4.687 12.284 -4.687 17 0"/>
+                                    </svg>
+                                    Wireless
+                                </a>
+                            </div>
+                            <div class="col-6 col-sm-4">
+                                <a href="/network/routing" class="btn btn-outline-primary w-100 mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon mb-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <circle cx="6" cy="19" r="2"/>
+                                        <circle cx="18" cy="5" r="2"/>
+                                        <path d="m8 19l8 0"/>
+                                        <path d="m16 5l-8 0"/>
+                                        <path d="m12 5v14"/>
+                                    </svg>
+                                    Routing
+                                </a>
+                            </div>
+                            <div class="col-6 col-sm-4">
+                                <a href="/network/firewall" class="btn btn-outline-primary w-100 mb-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="icon mb-2" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+                                        <path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3"/>
+                                        <path d="M12 11m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/>
+                                        <path d="M12 12l0 2.5"/>
+                                    </svg>
+                                    Firewall
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- System Status -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Network Status</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <div class="row">
+                                <div class="col-auto">
+                                    <span class="status-dot status-dot-animated bg-green d-inline-block" id="wan-status-dot"></span>
+                                </div>
+                                <div class="col">
+                                    <div class="text-truncate">
+                                        <strong>WAN Connection</strong>
+                                    </div>
+                                    <div class="text-muted" id="wan-status-text">Checking...</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="row">
+                                <div class="col-auto">
+                                    <span class="status-dot status-dot-animated bg-green d-inline-block" id="lan-status-dot"></span>
+                                </div>
+                                <div class="col">
+                                    <div class="text-truncate">
+                                        <strong>LAN Network</strong>
+                                    </div>
+                                    <div class="text-muted" id="lan-status-text">Checking...</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="row">
+                                <div class="col-auto">
+                                    <span class="status-dot bg-yellow d-inline-block" id="wifi-status-dot"></span>
+                                </div>
+                                <div class="col">
+                                    <div class="text-truncate">
+                                        <strong>Wireless</strong>
+                                    </div>
+                                    <div class="text-muted" id="wifi-status-text">Checking...</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="row">
+                                <div class="col-auto">
+                                    <span class="status-dot bg-green d-inline-block" id="firewall-status-dot"></span>
+                                </div>
+                                <div class="col">
+                                    <div class="text-truncate">
+                                        <strong>Firewall</strong>
+                                    </div>
+                                    <div class="text-muted" id="firewall-status-text-detail">Checking...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load network overview data
+document.addEventListener('DOMContentLoaded', function() {
+    loadNetworkOverview();
+    
+    // Update every 30 seconds
+    setInterval(loadNetworkOverview, 30000);
+});
+
+function loadNetworkOverview() {
+    // This would be implemented to call actual API endpoints
+    // For now, showing how the UI would be populated
+    
+    // Simulate loading network statistics
+    fetch('/api/network/status')
+        .then(response => response.json())
+        .then(data => {
+            // Update interface count and status
+            document.getElementById('interface-count').textContent = data.interfaces?.length || 0;
+            document.getElementById('interface-active').textContent = 
+                (data.interfaces?.filter(i => i.status === 'up').length || 0) + ' active';
+            
+            // Update traffic rates
+            document.getElementById('rx-rate').textContent = formatBytes(data.network_rx || 0) + '/s';
+            document.getElementById('tx-rate').textContent = formatBytes(data.network_tx || 0) + '/s';
+            
+            // Update firewall rules count
+            document.getElementById('firewall-rules').textContent = data.firewall_rules || 0;
+            document.getElementById('firewall-status').textContent = data.firewall_backend || 'Unknown';
+            
+            // Update static routes count
+            document.getElementById('static-routes').textContent = data.static_routes || 0;
+            document.getElementById('routing-status').textContent = 'Active';
+            
+            // Update status indicators
+            updateStatusDot('wan-status-dot', data.wan_connected);
+            updateStatusDot('lan-status-dot', data.lan_active);
+            updateStatusDot('wifi-status-dot', data.wifi_active);
+            updateStatusDot('firewall-status-dot', data.firewall_active);
+            
+            document.getElementById('wan-status-text').textContent = data.wan_connected ? 'Connected' : 'Disconnected';
+            document.getElementById('lan-status-text').textContent = data.lan_active ? 'Active' : 'Inactive';
+            document.getElementById('wifi-status-text').textContent = data.wifi_active ? 'Active' : 'Inactive';
+            document.getElementById('firewall-status-text-detail').textContent = data.firewall_active ? 'Protected' : 'Disabled';
+        })
+        .catch(error => {
+            console.error('Error loading network overview:', error);
+            // Set loading state indicators
+            document.getElementById('interface-count').textContent = '—';
+            document.getElementById('interface-active').textContent = 'Error loading';
+        });
+}
+
+function updateStatusDot(elementId, isActive) {
+    const dot = document.getElementById(elementId);
+    if (dot) {
+        dot.className = `status-dot d-inline-block ${isActive ? 'bg-green status-dot-animated' : 'bg-red'}`;
+    }
+}
+
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+</script>
+{{end}}
+{{template "base/layout.html" .}}
